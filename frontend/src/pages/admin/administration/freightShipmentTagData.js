@@ -1,0 +1,38 @@
+// "Administration > Freight Masters > Freight Shipment Tag" - dedicated
+// list, mirroring SeaRates ERP's "Freight Shipment Tag" screen: a single
+// "Name" column, inline "Create" row, multi-select Action menu
+// (Export / Archive / Unarchive), and an "Export Data" dialog.
+export const FREIGHT_SHIPMENT_TAGS = [
+  'Quote to shipment',
+  'Test1',
+  'TRY',
+  'FCL',
+  'LCL',
+  'D2D',
+  'Import',
+  'PASA',
+  'EXP',
+  'SEAFCL',
+  'SEA',
+  'EXP FCL',
+  'CEC EXP',
+  'create',
+  'O29',
+  'test',
+  'Monitoring',
+  '#LATAM',
+  'May',
+  'Siva',
+  'AAA customer',
+  'PO.no#122025',
+  'Mr.ABC from xxx pvt ltd',
+  'Oct',
+  'Demo',
+  'consol',
+  'cons',
+  'CFS',
+  'custom',
+  'Dec14',
+  'Export',
+  'Inland',
+];
