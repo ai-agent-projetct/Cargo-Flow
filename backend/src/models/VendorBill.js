@@ -13,9 +13,21 @@ const VendorBill = sequelize.define('VendorBill', {
     unique: true,
   },
   vendorId: {
+    // Nullable because procurement vendors are free text on the PO and may not
+    // exist as a customer record.
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true,
     comment: 'References Customer table (acting as vendor)',
+  },
+  vendorName: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Vendor label carried over from the purchase order',
+  },
+  purchaseOrderId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Set when the bill was raised from Procurement > Purchase',
   },
   ffJobId: {
     type: DataTypes.UUID,

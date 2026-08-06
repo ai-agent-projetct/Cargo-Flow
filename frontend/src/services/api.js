@@ -183,6 +183,37 @@ export const aiAPI = {
   extractDocument: (data) => api.post('/ai/extract-document', data),
 };
 
+// ─── RMS (rate management) ───────────────────────────────────────────────────
+export const rmsTariffsAPI = {
+  getAll: (params) => api.get('/rms/tariffs', { params }),
+  getById: (id) => api.get(`/rms/tariffs/${id}`),
+  create: (data) => api.post('/rms/tariffs', data),
+  update: (id, data) => api.put(`/rms/tariffs/${id}`, data),
+  duplicate: (id) => api.post(`/rms/tariffs/${id}/duplicate`),
+  addActivity: (id, data) => api.post(`/rms/tariffs/${id}/activity`, data),
+  importRows: (rows) => api.post('/rms/tariffs/import', { rows }),
+  delete: (id) => api.delete(`/rms/tariffs/${id}`),
+};
+
+// ─── Procurement ─────────────────────────────────────────────────────────────
+const PO = '/procurement/purchase-orders';
+export const purchaseOrdersAPI = {
+  getAll: (params) => api.get(PO, { params }),
+  getById: (id) => api.get(`${PO}/${id}`),
+  create: (data) => api.post(PO, data),
+  update: (id, data) => api.put(`${PO}/${id}`, data),
+  delete: (id) => api.delete(`${PO}/${id}`),
+  duplicate: (id) => api.post(`${PO}/${id}/duplicate`),
+  setPriority: (id, priority) => api.post(`${PO}/${id}/priority`, { priority }),
+  addActivity: (id, data) => api.post(`${PO}/${id}/activity`, data),
+  sendForApproval: (id, data) => api.post(`${PO}/${id}/send-for-approval`, data || {}),
+  approve: (id) => api.post(`${PO}/${id}/approve`),
+  reject: (id, data) => api.post(`${PO}/${id}/reject`, data || {}),
+  cancel: (id, data) => api.post(`${PO}/${id}/cancel`, data || {}),
+  createVendorBill: (id) => api.post(`${PO}/${id}/vendor-bill`),
+  getBills: (id) => api.get(`${PO}/${id}/bills`),
+};
+
 // ─── Departments (Administration) ────────────────────────────────────────────
 export const departmentsAPI = {
   getAll: (params) => api.get('/departments/', { params }),

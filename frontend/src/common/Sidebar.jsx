@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Receipt, CreditCard, Briefcase, Wrench,
   Ship, TrendingUp, Anchor, DollarSign, Building, Users,
   Truck, MapPin, BarChart2, Settings, UserCog, Activity,
-  FileCheck, Building2,
+  FileCheck, Building2, ShoppingCart,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
@@ -28,6 +28,9 @@ const adminNavigation = [
   { label: 'Operations', href: '/admin/house-shipments', icon: Ship },
   { label: 'Freight Booking', href: '/admin/freight-bookings', icon: Anchor },
 
+  { section: 'PROCUREMENT' },
+  { label: 'Purchase', href: '/admin/procurement/purchase-orders', icon: ShoppingCart },
+
   { section: 'ACCOUNTING' },
   { label: 'Invoices', href: '/admin/invoices', icon: Receipt },
   { label: 'Credit Notes', href: '/admin/credit-notes', icon: CreditCard },
@@ -39,6 +42,7 @@ const adminNavigation = [
   { label: 'Customers', href: '/admin/customers', icon: Users },
 
   { section: 'RATE MANAGEMENT' },
+  { label: 'RMS', href: '/admin/rms/tariffs', icon: DollarSign },
   { label: 'Rate Management', href: '/admin/rates', icon: DollarSign },
 
   { section: 'ADMINISTRATION' },

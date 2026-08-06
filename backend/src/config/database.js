@@ -449,6 +449,72 @@ const ensureOperationsTables = async () => {
       }
     }
 
+    if (!tables.includes('purchase_orders')) {
+      // Procurement > Purchase: POs raised against a shipment.
+      await qi.createTable('purchase_orders', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        poNumber: { type: DataTypes.STRING(40), allowNull: false, unique: true },
+        poDate: { type: DataTypes.DATE, allowNull: true },
+        state: { type: DataTypes.ENUM('draft', 'to_approve', 'approved', 'cancel', 'reject'), defaultValue: 'draft' },
+        priority: { type: DataTypes.INTEGER, defaultValue: 0 },
+        vendor: { type: DataTypes.STRING(200), allowNull: true },
+        vendorInvoiceNo: { type: DataTypes.STRING(80), allowNull: true },
+        vendorInvoiceDate: { type: DataTypes.DATEONLY, allowNull: true },
+        contact: { type: DataTypes.STRING(150), allowNull: true },
+        shipmentNo: { type: DataTypes.STRING(80), allowNull: true },
+        createdByName: { type: DataTypes.STRING(150), allowNull: true },
+        approvedByName: { type: DataTypes.STRING(150), allowNull: true },
+        purchaseApprover: { type: DataTypes.STRING(150), allowNull: true },
+        approvedDate: { type: DataTypes.DATEONLY, allowNull: true },
+        chargeLines: { type: DataTypes.JSON, allowNull: true },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        amountTotal: { type: DataTypes.DECIMAL(16, 2), defaultValue: 0 },
+        cancelReason: { type: DataTypes.STRING(150), allowNull: true },
+        cancelRemark: { type: DataTypes.TEXT, allowNull: true },
+        billCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        documentCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created purchase_orders table.');
+    }
+
+    if (!tables.includes('rms_tariffs')) {
+      // RMS > Tariff: per-lane rate cards with three JSON charge grids.
+      await qi.createTable('rms_tariffs', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        tariffNumber: { type: DataTypes.STRING(40), allowNull: false, unique: true },
+        tariffDate: { type: DataTypes.DATEONLY, allowNull: true },
+        expiryDate: { type: DataTypes.DATEONLY, allowNull: true },
+        service: { type: DataTypes.STRING(10), defaultValue: 'SEA' },
+        trade: { type: DataTypes.STRING(10), defaultValue: 'EXP' },
+        cargoType: { type: DataTypes.STRING(20), defaultValue: 'FCL' },
+        originCountry: { type: DataTypes.STRING(100), allowNull: true },
+        originPort: { type: DataTypes.STRING(200), allowNull: true },
+        destinationCountry: { type: DataTypes.STRING(100), allowNull: true },
+        destinationPort: { type: DataTypes.STRING(200), allowNull: true },
+        isHazardous: { type: DataTypes.BOOLEAN, defaultValue: false },
+        originCharges: { type: DataTypes.JSON, allowNull: true },
+        freightCharges: { type: DataTypes.JSON, allowNull: true },
+        destinationCharges: { type: DataTypes.JSON, allowNull: true },
+        grossWeight: { type: DataTypes.DECIMAL(12, 3), allowNull: true },
+        chargeableWeight: { type: DataTypes.DECIMAL(12, 3), allowNull: true },
+        volume: { type: DataTypes.DECIMAL(12, 3), allowNull: true },
+        company: { type: DataTypes.STRING(150), allowNull: true },
+        documentCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created rms_tariffs table.');
+    }
+
     if (!tables.includes('organizations')) {
       // Partner master behind the Organizations module. Columns follow the
       // SeaRates Organizations form (header + its six tabs).
@@ -557,6 +623,28 @@ const ensureOperationsTables = async () => {
           await sequelize.query(`ALTER TABLE organizations ADD COLUMN \`${col}\` ${def}`);
           console.log(`Added organizations.${col} column.`);
         }
+      }
+    }
+
+    // Procurement's "Create Vendor Bill" raises a real bill off the PO, so the
+    // bill needs to point back at it and carry the PO's free-text vendor name
+    // (procurement vendors aren't necessarily rows in `customers`).
+    if (tables.includes('vendor_bills')) {
+      const billCols = await qi.describeTable('vendor_bills');
+      const billAdditions = {
+        purchaseOrderId: 'CHAR(36) NULL',
+        vendorName: 'VARCHAR(200) NULL',
+      };
+      for (const [col, def] of Object.entries(billAdditions)) {
+        if (!billCols[col]) {
+          await sequelize.query(`ALTER TABLE vendor_bills ADD COLUMN \`${col}\` ${def}`);
+          console.log(`Added vendor_bills.${col} column.`);
+        }
+      }
+      if (billCols.vendorId && billCols.vendorId.allowNull === false) {
+        // CHAR(36) BINARY must be preserved or the FK to customers.id breaks.
+        await sequelize.query('ALTER TABLE vendor_bills MODIFY COLUMN vendorId CHAR(36) BINARY NULL');
+        console.log('Relaxed vendor_bills.vendorId to nullable.');
       }
     }
 
@@ -1401,6 +1489,113 @@ const PARTY_TYPES = [
   'Miami', 'shipper', 'Transporter', 'United State', 'United States',
 ];
 
+// Purchase orders from the live demo.
+// [poNumber, poDate, vendor, shipmentNo, state, priority, amountTotal, billCount]
+const PURCHASE_ORDERS = [
+  ['P00164', '2026-02-04 15:16:33', '3KAW#LBC9US-1: Leviton Manufacturing Co., Inc.', 'SEA-E-FCL-H-N-2026-01845', 'approved', 0, 1, 1],
+  ['P00163', '2025-12-11 06:12:14', 'A-13: Ashish', 'HBL-0001', 'approved', 0, 250, 1],
+  ['P00162', '2025-12-11 03:48:13', 'A-13: Ashish', 'HBL-123', 'approved', 0, 1, 0],
+  ['P00161', '2025-10-14 09:02:02', '5TON7MD-BB-1: SUSA SHIPPING SERVICES LLC', 'HBL123', 'approved', 0, 550, 0],
+  ['P00160', '2025-09-18 09:08:56', 'A-13: Ashish', 'ROA-E-FTL-H-N-2025-01521', 'approved', 0, 30, 0],
+  ['P00157', '2025-09-09 06:51:31', 'A-13: Ashish', 'TEST ZAFAR', 'approved', 0, 50000, 0],
+  ['P00156', '2025-09-09 06:18:45', 'CPA-1: Customer Portal Access', 'TEST ZAFAR', 'to_approve', 0, 25000, 0],
+  ['P00155', '2025-09-09 05:40:40', 'A-10: AMGAD', 'HBLSR01481', 'approved', 0, 50000, 0],
+  ['P00154', '2025-09-02 06:58:03', '3KAW#LBC9US-1: Leviton Manufacturing Co., Inc.', 'SEA-E-FCL-H-N-2025-01468', 'to_approve', 0, 50, 0],
+  ['P00153', '2025-08-24 20:56:38', 'CPA-1: Customer Portal Access', 'HBL01445', 'approved', 0, 5100000, 1],
+  ['P00152', '2025-08-18 13:41:14', 'A-14: Aafaque', 'HBL01352', 'approved', 0, 500, 0],
+  ['P00151', '2025-08-16 12:37:28', 'CPA-1: Customer Portal Access', 'ZAFARTEST342234', 'reject', 1, 8880, 0],
+  ['P00150', '2025-08-13 10:52:37', 'A-13: Ashish', 'HBLS01410', 'approved', 1, 50, 1],
+  ['P00149', '2025-08-13 10:48:48', 'A-14: Aafaque', 'HBLS01410', 'approved', 1, 180, 0],
+  ['P00148', '2025-08-13 10:16:51', 'CPA-1: Customer Portal Access', 'HBLtest', 'approved', 1, 1000000, 1],
+  ['P00146', '2025-08-13 06:06:48', 'CPA-1: Customer Portal Access', 'HBLS01410', 'approved', 1, 160, 1],
+  ['P00145', '2025-08-13 05:54:15', 'A-10: AMGAD', 'SEA-E-FCL-H-N-2025-01409', 'to_approve', 1, 150, 0],
+  ['P00144', '2025-08-13 05:29:06', 'A-14: Aafaque', 'HBLS01410', 'approved', 0, 1046.8, 0],
+  ['P00143', '2025-08-12 09:40:02', '3KAW#LBC9US(-1: Leviton Manufacturing Co., Inc.', 'SEA-E-FCL-H-N-2025-01403', 'approved', 0, 550, 1],
+  ['P00142', '2025-08-05 15:08:56', 'CPA-1: Customer Portal Access', 'direct', 'cancel', 1, 1500, 0],
+  ['P00138', '2025-06-18 13:40:47', '5TON7MD-BB-1: SUSA SHIPPING SERVICES LLC', 'SEA-E-FCL-H-N-2025-01231', 'approved', 0, 500, 0],
+  ['P00137', '2025-06-07 05:59:38', 'CCS-1: CMA CGM S.A.', 'HBL- 2025-099', 'approved', 1, 3466, 1],
+  ['P00136', '2025-05-27 11:29:06', 'CPA-1: Customer Portal Access', 'SEA-E-LCL-H-N-2025-01136', 'approved', 0, 2211, 1],
+  ['P00135', '2025-05-02 17:34:32', 'A-10: AMGAD', 'HBLS01064', 'approved', 0, 1251750, 0],
+  ['P00134', '2025-04-30 11:06:46', 'CPA-1: Customer Portal Access', 'HBL321', 'approved', 0, 0, 0],
+  ['P00132', '2025-04-15 10:31:58', 'A-13: Ashish', 'ROA-I-FTL-H-N-2025-01003', 'approved', 0, 50, 0],
+  // The live demo happens to hold no RFQs right now; these two exist so the
+  // Send for Approval / Approve / Reject path is walkable without creating one.
+  ['P00165', '2026-03-02 09:15:00', 'CCS-1: CMA CGM S.A.', 'SEA-I-FCL-H-N-2026-01862', 'draft', 0, 2750, 0],
+  ['P00166', '2026-03-11 11:40:00', 'A-14: Aafaque', 'ROA-E-FTL-H-N-2026-01871', 'draft', 1, 420, 0],
+];
+
+// Per-PO extras that only some records carry.
+const PO_DETAILS = {
+  P00151: {
+    vendorInvoiceNo: 'INV 00012', vendorInvoiceDate: '2025-08-09', contact: 'Abdull Abdull',
+    createdByName: 'Abdallah', purchaseApprover: 'Abdallah',
+    chargeLines: [{
+      sNo: 1, product: '[201T0] Ocean Freight', uom: 'Shipment', noOfUnit: 4,
+      chargeCurrency: 'USD', exchangeRate: 1, amountPerUnit: 600, amount: 2400,
+      currencyTotalAmount: 2400, orderCurrencyTotalAmount: 8880,
+    }],
+  },
+  P00150: {
+    createdByName: 'Sivaranjani (Tech Support)', approvedByName: 'Administrator',
+    purchaseApprover: 'Administrator', approvedDate: '2026-01-04',
+    chargeLines: [{
+      sNo: 1, product: '[OCAG] On Carriage', uom: 'Shipment', noOfUnit: 1,
+      chargeCurrency: 'AED', exchangeRate: 1, amountPerUnit: 50, amount: 50,
+      currencyTotalAmount: 50, orderCurrencyTotalAmount: 50,
+    }],
+  },
+  P00165: {
+    contact: 'Ravi Menon',
+    chargeLines: [
+      {
+        sNo: 1, product: '[201T0] Ocean Freight', uom: 'Container', noOfUnit: 2,
+        chargeCurrency: 'USD', exchangeRate: 3.67, amountPerUnit: 350, amount: 700,
+        currencyTotalAmount: 700, orderCurrencyTotalAmount: 2569,
+      },
+      {
+        sNo: 2, product: '[THCD] Terminal Handling - Destination', uom: 'Container', noOfUnit: 2,
+        chargeCurrency: 'AED', exchangeRate: 1, amountPerUnit: 90.5, amount: 181,
+        currencyTotalAmount: 181, orderCurrencyTotalAmount: 181,
+      },
+    ],
+  },
+  P00166: {
+    contact: 'Aafaque Ahmed',
+    chargeLines: [{
+      sNo: 1, product: '[PCAG] Pre Carriage', uom: 'Shipment', noOfUnit: 3,
+      chargeCurrency: 'AED', exchangeRate: 1, amountPerUnit: 140, amount: 420,
+      currencyTotalAmount: 420, orderCurrencyTotalAmount: 420,
+    }],
+  },
+};
+
+// RMS tariffs from the live demo.
+// [number, date, service, trade, cargo, originCountry, originPort, destCountry, destPort, expiry]
+const RMS_TARIFFS = [
+  ['TF/00001', '2025-09-01', 'SEA', 'EXP', 'FCL', 'Malaysia', 'BINTULU, SARAWAK - [Malaysia - MYBTU]', 'Singapore', 'SINGAPORE - [Singapore - SGSIN]', '2025-12-31'],
+  ['TF/00003', '2025-09-01', 'AIR', 'EXP', 'LSE', 'Malaysia', 'Alor Setar - [Malaysia - AOR]', 'Singapore', 'singapore - [Singapore - SIN]', '2025-12-31'],
+  ['TF/00004', '2025-09-01', 'ROA', 'EXP', 'FTL', 'Malaysia', 'Air Itam/Penang - [Malaysia - MYAIR]', 'Singapore', 'Bukit Merah Estate - [Singapore - SGBKM]', '2026-01-31'],
+  ['TF/00229', '2025-09-29', 'SEA', 'EXP', 'FCL', 'Philippines', 'DAVAO, MINDANAO - [Philippines - PHDVO]', 'United Arab Emirates', 'ABU DHABI - [United Arab Emirates - AEAUH]', '2025-12-31'],
+  ['TF/00230', '2025-10-10', 'SEA', 'EXP', 'FCL', 'Malaysia', 'Port Klang - [Malaysia - MYKUL]', 'United Arab Emirates', 'JEBEL ALI SEAPORT, U.A.E - [United Arab Emirates - AEJEA]', '2025-11-30'],
+  ['TF/00231', '2025-10-13', 'SEA', 'EXP', 'FCL', 'Malaysia', 'BINTULU, SARAWAK - [Malaysia - MYBTU]', 'India', 'Gandhinagar - [India - INGDH]', '2025-12-31'],
+  ['TF/00232', '2025-11-22', 'AIR', 'IMP', 'PLT', 'China', 'Shanghai Pudong Intl - [China - PVG]', 'Qatar', 'Doha - [Qatar - DOH]', '2025-11-30'],
+  ['TF/00233', '2025-11-22', 'SEA', 'IMP', 'FCL', 'United Kingdom', 'FELIXSTOWE - [United Kingdom - GBFXT]', 'Qatar', 'HAMAD - [Qatar - QAHMD]', '2025-11-30'],
+  ['TF/00234', '2025-11-23', 'ROA', 'EXP', 'FTL', 'Qatar', "Umm Sa'id (Mesaieed) - [Qatar - QAUMS]", 'Saudi Arabia', 'Riyadh Dry Port - [Saudi Arabia - SARYP]', '2025-12-15'],
+  ['TF/00235', '2025-11-23', 'AIR', 'IMP', 'PLT', 'France', 'Charles-de-Gaulle Apt/Paris - [France - CDG]', 'Qatar', 'Doha - [Qatar - DOH]', '2025-11-30'],
+  ['TF/00245', '2025-12-11', 'SEA', 'EXP', 'FCL', 'India', 'HALDIA - [India - INHAL]', 'Malaysia', 'KOTA KINABALU, SABAH - [Malaysia - MYBKI]', '2026-01-31'],
+  ['TF/00246', '2026-01-06', 'AIR', 'EXP', 'PLT', 'Algeria', 'Ain Eddis Apt/Bou Saada - [Algeria - BUJ]', 'Angola', 'Cafunfo - [Angola - CFF]', '2026-01-14'],
+  ['TF/00247', '2026-01-16', 'AIR', 'EXP', 'CR', 'Malaysia', 'Kuala Lumpur - [Malaysia - KUL]', 'India', 'Mumbai - [India - BOM]', '2026-04-30'],
+];
+
+// TF/00004 carries real charge lines on all three grids; the rest start empty.
+const RMS_CHARGE_LINES = {
+  'TF/00004': {
+    originCharges: [{ charge: 'Handling fee', unit: 'Shipment', currency: 'MYR', ssp: 6000, msp: 7000, cost: 8000, minimum: 4500, tos: 'FREE CARRIER', carrier: 'ABC Transporter', agent: 'A-10: AMGAD' }],
+    freightCharges: [{ charge: 'Freight charge', unit: 'Shipment', currency: 'MYR', ssp: 8000, msp: 6000, cost: 7000, minimum: 5500, tos: 'FREE CARRIER', carrier: 'ABC Transporter', agent: 'A-10: AMGAD' }],
+    destinationCharges: [{ charge: 'BL Fee', unit: 'Shipment', currency: 'MYR', ssp: 7900, msp: 6000, cost: 5000, minimum: 3500, tos: 'FREE CARRIER', carrier: 'ABC Transporter', agent: 'A-10: AMGAD' }],
+  },
+};
+
 // Party Types assigned per organization, so the list's "Group By › Party Types"
 // buckets partners the way the demo does. Anything absent here groups under
 // "Undefined".
@@ -1560,6 +1755,93 @@ const seedOperationsData = async () => {
         expectedCloseDate: date,
       })));
       console.log(`Seeded ${OPPORTUNITIES.length} opportunities.`);
+    }
+
+    const { RMSTariff } = require('../models');
+    if ((await RMSTariff.count()) === 0) {
+      await RMSTariff.bulkCreate(RMS_TARIFFS.map(
+        ([tariffNumber, tariffDate, service, trade, cargoType, originCountry, originPort, destinationCountry, destinationPort, expiryDate]) => ({
+          tariffNumber, tariffDate, service, trade, cargoType,
+          originCountry, originPort, destinationCountry, destinationPort, expiryDate,
+          company: 'CargoFlo Logistics Ltd',
+          activityLog: [{
+            at: new Date(tariffDate).toISOString(),
+            author: 'Mohamed (Tech Support)',
+            kind: 'log', body: 'Tariff created', changes: [],
+          }],
+          ...(RMS_CHARGE_LINES[tariffNumber] || {}),
+        })
+      ));
+      console.log(`Seeded ${RMS_TARIFFS.length} RMS tariffs.`);
+    }
+
+    const { PurchaseOrder } = require('../models');
+    // Insert by number so re-seeding tops up new demo rows without wiping POs
+    // the user has since raised.
+    const existingPOs = new Set(
+      (await PurchaseOrder.findAll({ attributes: ['poNumber'], raw: true })).map((p) => p.poNumber)
+    );
+    const missingPOs = PURCHASE_ORDERS.filter(([poNumber]) => !existingPOs.has(poNumber));
+    if (missingPOs.length) {
+      await PurchaseOrder.bulkCreate(missingPOs.map(
+        ([poNumber, poDate, vendor, shipmentNo, state, priority, amountTotal, billCount]) => {
+          const extra = PO_DETAILS[poNumber] || {};
+          const log = [{
+            at: new Date(poDate).toISOString(),
+            author: extra.createdByName || 'Administrator',
+            kind: 'log', body: 'Purchase Order created', changes: [],
+          }];
+          if (state === 'approved') {
+            log.unshift({
+              at: new Date(poDate).toISOString(),
+              author: extra.approvedByName || 'Administrator',
+              kind: 'log', body: 'Purchase Order approved', changes: [],
+            });
+          }
+          return {
+            poNumber, poDate, vendor, shipmentNo, state, priority, amountTotal, billCount,
+            currency: 'AED',
+            createdByName: 'Administrator',
+            approvedByName: state === 'approved' ? 'Administrator' : null,
+            purchaseApprover: 'Administrator',
+            approvedDate: state === 'approved' ? String(poDate).slice(0, 10) : null,
+            documentCount: 0,
+            cancelReason: state === 'cancel' ? 'Duplicate Entry' : null,
+            cancelRemark: state === 'cancel' ? 'Raised twice against the same shipment.' : null,
+            activityLog: log,
+            ...extra,
+          };
+        }
+      ), { individualHooks: false });
+      console.log(`Seeded ${missingPOs.length} purchase orders.`);
+    }
+
+    // The Bills stat button has to drill into something, so give every PO the
+    // demo shows a bill against an actual posted vendor bill.
+    const { VendorBill } = require('../models');
+    const { Op: SqOp } = require('sequelize');
+    const billedPOs = await PurchaseOrder.findAll({ where: { billCount: { [SqOp.gt]: 0 } } });
+    for (const po of billedPOs) {
+      const already = await VendorBill.count({ where: { purchaseOrderId: po.id } });
+      if (already) continue;
+      const lines = Array.isArray(po.chargeLines) ? po.chargeLines : [];
+      await VendorBill.create({
+        purchaseOrderId: po.id,
+        vendorName: po.vendor,
+        billDate: new Date(po.poDate).toISOString().slice(0, 10),
+        currency: po.currency || 'AED',
+        subtotal: po.amountTotal,
+        totalAmount: po.amountTotal,
+        status: 'posted',
+        notes: `Generated from purchase order ${po.poNumber}`,
+        items: lines.map((l) => ({
+          description: l.product,
+          quantity: Number(l.noOfUnit || 0),
+          unitPrice: Number(l.amountPerUnit || 0),
+          amount: Number(l.orderCurrencyTotalAmount || l.amount || 0),
+          category: 'purchase',
+        })),
+      });
     }
 
     const { Organization, MasterDataItem } = require('../models');

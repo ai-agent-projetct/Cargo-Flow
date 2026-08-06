@@ -34,6 +34,8 @@ const ShipmentSharing = require('./ShipmentSharing');
 const OCRDocument = require('./OCRDocument');
 const ContainerNumber = require('./ContainerNumber');
 const Organization = require('./Organization');
+const RMSTariff = require('./RMSTariff');
+const PurchaseOrder = require('./PurchaseOrder');
 const MasterDataItem = require('./MasterDataItem');
 
 // User <-> Company
@@ -257,5 +259,7 @@ module.exports = {
   OCRDocument,
   ContainerNumber,
   Organization,
+  RMSTariff,
+  PurchaseOrder,
   MasterDataItem,
 };

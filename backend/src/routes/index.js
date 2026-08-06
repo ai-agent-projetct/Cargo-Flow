@@ -37,6 +37,8 @@ const cfsDeliveryRoutes = require('./cfsDeliveries');
 const consolidationRoutes = require('./consolidations');
 const organizationRoutes = require('./organizations');
 const aiRoutes = require('./ai');
+const rmsTariffRoutes = require('./rmsTariffs');
+const purchaseOrderRoutes = require('./purchaseOrders');
 const shipmentSharingRoutes = require('./shipmentSharings');
 const ocrDocumentRoutes = require('./ocrDocuments');
 const containerNumberRoutes = require('./containerNumbers');
@@ -88,6 +90,8 @@ const registerRoutes = (app, io) => {
   app.use('/api/consolidations', consolidationRoutes);
   app.use('/api/organizations', organizationRoutes);
   app.use('/api/ai', aiRoutes);
+  app.use('/api/rms/tariffs', rmsTariffRoutes);
+  app.use('/api/procurement/purchase-orders', purchaseOrderRoutes);
   app.use('/api/shipment-sharings', shipmentSharingRoutes);
   app.use('/api/ocr-documents', ocrDocumentRoutes);
   app.use('/api/container-numbers', containerNumberRoutes);

@@ -51,6 +51,12 @@ import AdminCreditNotes from './pages/admin/CreditNotes';
 import AdminOrganizations from './pages/admin/Organizations';
 import OrganizationDetail from './pages/admin/OrganizationDetail';
 import OrganizationRelated from './pages/admin/organization/OrganizationRelated';
+import RMSLayout from './pages/admin/rms/RMSLayout';
+import RMSTariffList from './pages/admin/rms/RMSTariffList';
+import RMSTariffDetail from './pages/admin/rms/RMSTariffDetail';
+import ProcurementLayout from './pages/admin/procurement/ProcurementLayout';
+import PurchaseOrderList from './pages/admin/procurement/PurchaseOrderList';
+import PurchaseOrderDetail from './pages/admin/procurement/PurchaseOrderDetail';
 import MasterShipments from './pages/admin/MasterShipments';
 import MasterShipmentDetail from './pages/admin/MasterShipmentDetail';
 import CFSReceipts from './pages/admin/CFSReceipts';
@@ -199,6 +205,21 @@ function App() {
               <Route path="organizations/create" element={<OrganizationDetail />} />
               <Route path="organizations/:id" element={<OrganizationDetail />} />
               <Route path="organizations/:id/:type" element={<OrganizationRelated />} />
+
+              {/* RMS — Tariff list/detail under a shared tab bar */}
+              <Route path="rms" element={<RMSLayout />}>
+                <Route index element={<Navigate to="/admin/rms/tariffs" replace />} />
+                <Route path="tariffs" element={<RMSTariffList />} />
+                <Route path="tariffs/create" element={<RMSTariffDetail />} />
+                <Route path="tariffs/:id" element={<RMSTariffDetail />} />
+              </Route>
+              {/* Procurement — Purchase list/detail under a shared tab bar */}
+              <Route path="procurement" element={<ProcurementLayout />}>
+                <Route index element={<Navigate to="/admin/procurement/purchase-orders" replace />} />
+                <Route path="purchase-orders" element={<PurchaseOrderList />} />
+                <Route path="purchase-orders/create" element={<PurchaseOrderDetail />} />
+                <Route path="purchase-orders/:id" element={<PurchaseOrderDetail />} />
+              </Route>
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="customers/create" element={<AdminCustomerDetail />} />
               <Route path="customers/:id" element={<AdminCustomerDetail />} />

@@ -106,7 +106,9 @@ const OperationsLayout = () => {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-1 px-3 overflow-x-auto flex-wrap" ref={menuRef}>
+        {/* overflow must stay visible — `overflow-x-auto` creates a clipping
+            context that swallows the absolutely-positioned dropdowns below. */}
+        <div className="flex items-center gap-1 px-3 overflow-visible flex-wrap" ref={menuRef}>
           {TABS.map((tab) => (
             <div key={tab.key} className="relative">
               <button

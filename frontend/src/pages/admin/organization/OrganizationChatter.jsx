@@ -18,7 +18,10 @@ const relative = (iso) => {
   return `${years} year${years === 1 ? '' : 's'} ago`;
 };
 
-const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, onPosted }) => {
+// `api` lets other modules (RMS tariffs, etc.) reuse this feed — any client
+// exposing addActivity(id, {kind, body}) works.
+const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, onPosted, api }) => {
+  const client = api || organizationsAPI;
   const [composing, setComposing] = useState(null); // 'message' | 'note' | null
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,7 +30,7 @@ const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, 
     if (!body.trim()) return;
     setSaving(true);
     try {
-      const res = await organizationsAPI.addActivity(organizationId, { kind: composing, body: body.trim() });
+      const res = await client.addActivity(organizationId, { kind: composing, body: body.trim() });
       onPosted?.(res.data.data);
       setBody('');
       setComposing(null);
