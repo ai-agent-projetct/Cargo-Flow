@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Contexts
+import { PermissionProvider } from './context/PermissionContext';
+import AccessWarningDialog from './common/AccessWarningDialog';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 
@@ -45,7 +47,25 @@ import AdminHouseShipmentDetail from './pages/admin/HouseShipmentDetail';
 import AdminServiceJobs from './pages/admin/ServiceJobs';
 import AdminServiceJobDetail from './pages/admin/ServiceJobDetail';
 import AdminOpportunities from './pages/admin/Opportunities';
-import AdminFreightBookings from './pages/admin/FreightBookings';
+import FreightBookingLayout from './pages/admin/freight/FreightBookingLayout';
+import FreightBookingList from './pages/admin/freight/FreightBookingList';
+import FreightBookingDetail from './pages/admin/freight/FreightBookingDetail';
+import FreightBookingSettings from './pages/admin/freight/FreightBookingSettings';
+import TMSRequestList from './pages/admin/tms/TMSRequestList';
+import TMSRequestDetail from './pages/admin/tms/TMSRequestDetail';
+import AccessRights from './pages/admin/administration/AccessRights';
+import AccountingLayout from './pages/admin/accounting/AccountingLayout';
+import AccountingDashboard from './pages/admin/accounting/AccountingDashboard';
+import AccountingStub from './pages/admin/accounting/AccountingStub';
+import MoveList from './pages/admin/accounting/MoveList';
+import MoveDetail from './pages/admin/accounting/MoveDetail';
+import PaymentList from './pages/admin/accounting/PaymentList';
+import PaymentDetail from './pages/admin/accounting/PaymentDetail';
+import ProFormaList from './pages/admin/accounting/ProFormaList';
+import ProFormaDetail from './pages/admin/accounting/ProFormaDetail';
+import ProductList from './pages/admin/accounting/ProductList';
+import ProductDetail from './pages/admin/accounting/ProductDetail';
+import PartnerList from './pages/admin/accounting/PartnerList';
 import AdminVendorBills from './pages/admin/VendorBills';
 import AdminCreditNotes from './pages/admin/CreditNotes';
 import AdminOrganizations from './pages/admin/Organizations';
@@ -54,6 +74,8 @@ import OrganizationRelated from './pages/admin/organization/OrganizationRelated'
 import RMSLayout from './pages/admin/rms/RMSLayout';
 import RMSTariffList from './pages/admin/rms/RMSTariffList';
 import RMSTariffDetail from './pages/admin/rms/RMSTariffDetail';
+import CalendarPage from './pages/admin/calendar/CalendarPage';
+import CalendarEventDetail from './pages/admin/calendar/CalendarEventDetail';
 import ProcurementLayout from './pages/admin/procurement/ProcurementLayout';
 import PurchaseOrderList from './pages/admin/procurement/PurchaseOrderList';
 import PurchaseOrderDetail from './pages/admin/procurement/PurchaseOrderDetail';
@@ -96,6 +118,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PermissionProvider>
         <AppProvider>
           <Toaster
             position="top-right"
@@ -179,7 +202,13 @@ function App() {
               </Route>
 
               {/* Freight Bookings */}
-              <Route path="freight-bookings" element={<AdminFreightBookings />} />
+              {/* Freight Booking — Bookings list/detail + Configuration > Settings */}
+              <Route path="freight-bookings" element={<FreightBookingLayout />}>
+                <Route index element={<FreightBookingList />} />
+                <Route path="settings" element={<FreightBookingSettings />} />
+                <Route path="create" element={<FreightBookingDetail />} />
+                <Route path=":id" element={<FreightBookingDetail />} />
+              </Route>
 
               {/* Shipments (legacy) */}
               <Route path="shipments" element={<AdminShipments />} />
@@ -213,6 +242,58 @@ function App() {
                 <Route path="tariffs/create" element={<RMSTariffDetail />} />
                 <Route path="tariffs/:id" element={<RMSTariffDetail />} />
               </Route>
+              {/* Accounting — full 118-node menu; unbuilt leaves render a stub */}
+              <Route path="accounting" element={<AccountingLayout />}>
+                <Route index element={<Navigate to="/admin/accounting/dashboard" replace />} />
+                <Route path="dashboard" element={<AccountingDashboard />} />
+
+                {/* Customers > Invoices / Credit Notes / Debit Notes — one model */}
+                <Route path="customers/invoices" element={<MoveList menu="invoices" />} />
+                <Route path="customers/invoices/create" element={<MoveDetail menu="invoices" />} />
+                <Route path="customers/invoices/:id" element={<MoveDetail menu="invoices" />} />
+                <Route path="customers/credit-notes" element={<MoveList menu="credit-notes" />} />
+                <Route path="customers/credit-notes/create" element={<MoveDetail menu="credit-notes" />} />
+                <Route path="customers/credit-notes/:id" element={<MoveDetail menu="credit-notes" />} />
+                <Route path="customers/debit-notes" element={<MoveList menu="debit-notes" />} />
+                <Route path="customers/debit-notes/create" element={<MoveDetail menu="debit-notes" />} />
+                <Route path="customers/debit-notes/:id" element={<MoveDetail menu="debit-notes" />} />
+
+                {/* Customers > Payments / Pro Forma / Products / Customers */}
+                <Route path="customers/payments" element={<PaymentList menu="payments" />} />
+                <Route path="customers/payments/create" element={<PaymentDetail menu="payments" />} />
+                <Route path="customers/payments/:id" element={<PaymentDetail menu="payments" />} />
+                <Route path="customers/pro-forma" element={<ProFormaList />} />
+                <Route path="customers/pro-forma/create" element={<ProFormaDetail />} />
+                <Route path="customers/pro-forma/:id" element={<ProFormaDetail />} />
+                <Route path="customers/products" element={<ProductList menu="products" />} />
+                <Route path="customers/products/create" element={<ProductDetail menu="products" />} />
+                <Route path="customers/products/:id" element={<ProductDetail menu="products" />} />
+                {/* The partner screens are the Organization records, filtered */}
+                <Route path="customers/list" element={<PartnerList kind="customer" />} />
+
+                {/* Vendors > Payments / Products / Vendors share the same screens */}
+                <Route path="vendors/payments" element={<PaymentList menu="vendor-payments" />} />
+                <Route path="vendors/payments/create" element={<PaymentDetail menu="vendor-payments" />} />
+                <Route path="vendors/payments/:id" element={<PaymentDetail menu="vendor-payments" />} />
+                <Route path="vendors/products" element={<ProductList menu="vendor-products" />} />
+                <Route path="vendors/products/create" element={<ProductDetail menu="vendor-products" />} />
+                <Route path="vendors/products/:id" element={<ProductDetail menu="vendor-products" />} />
+                <Route path="vendors/list" element={<PartnerList kind="vendor" />} />
+
+                <Route path="*" element={<AccountingStub />} />
+              </Route>
+
+              {/* TMS — read-only provider requests */}
+              <Route path="tms" element={<TMSRequestList />} />
+              <Route path="tms/:id" element={<TMSRequestDetail />} />
+
+              {/* Access rights — groups, the ACL matrix, and user assignment */}
+              <Route path="access-rights" element={<AccessRights />} />
+
+              {/* Calendar — Meetings across Day/Week/Month/Year + list */}
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="calendar/events/:id" element={<CalendarEventDetail />} />
+
               {/* Procurement — Purchase list/detail under a shared tab bar */}
               <Route path="procurement" element={<ProcurementLayout />}>
                 <Route index element={<Navigate to="/admin/procurement/purchase-orders" replace />} />
@@ -300,6 +381,8 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </AppProvider>
+        <AccessWarningDialog />
+        </PermissionProvider>
       </AuthProvider>
     </BrowserRouter>
   );

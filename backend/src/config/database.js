@@ -449,6 +449,397 @@ const ensureOperationsTables = async () => {
       }
     }
 
+    // Freight Booking was a 21-column stub before it was rebuilt against
+    // freight.booking.request; the old shape shares almost no columns, so it is
+    // dropped and recreated rather than migrated column by column.
+    const fbNeedsRebuild = tables.includes('freight_bookings')
+      && !(await qi.describeTable('freight_bookings')).transportCode;
+    if (fbNeedsRebuild) {
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+      await sequelize.query('DROP TABLE freight_bookings');
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+      console.log('Dropped legacy freight_bookings table.');
+    }
+    if (fbNeedsRebuild || !tables.includes('freight_bookings')) {
+      await qi.createTable('freight_bookings', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        bookingReference: { type: DataTypes.STRING(60), allowNull: false },
+        bookingNumber: { type: DataTypes.STRING(80), allowNull: true },
+        transportCode: { type: DataTypes.ENUM('SEA', 'AIR'), allowNull: false, defaultValue: 'AIR' },
+        modeType: { type: DataTypes.ENUM('sea', 'land', 'air'), defaultValue: 'air' },
+        status: { type: DataTypes.ENUM('init', 'pending', 'success', 'fail', 'cancel'), defaultValue: 'init' },
+        airStatus: {
+          type: DataTypes.ENUM('created', 'booking_created', 'booking_confirmed', 'booking_rejected',
+            'booking_failed', 'booking_cancel_req', 'booking_cancelled'),
+          defaultValue: 'created',
+        },
+        providerStatus: { type: DataTypes.STRING(250), allowNull: true },
+        buycoTransportStatus: { type: DataTypes.STRING(120), allowNull: true },
+        carrierIdentifier: { type: DataTypes.STRING(20), allowNull: true },
+        subscriptionStatus: { type: DataTypes.STRING(20), defaultValue: 'active' },
+        paymentTerms: { type: DataTypes.ENUM('ppx', 'ccx'), allowNull: true },
+        incoterm: { type: DataTypes.STRING(80), allowNull: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        transportMode: { type: DataTypes.STRING(60), allowNull: true },
+        carrier: { type: DataTypes.STRING(120), allowNull: true },
+        cargoType: { type: DataTypes.STRING(60), allowNull: true },
+        assignedTo: { type: DataTypes.STRING(150), allowNull: true },
+        assignedToVerified: { type: DataTypes.BOOLEAN, defaultValue: true },
+        trackingNumber: { type: DataTypes.STRING(60), allowNull: true },
+        airline: { type: DataTypes.STRING(120), allowNull: true },
+        flightNo: { type: DataTypes.STRING(40), allowNull: true },
+        serviceMode: { type: DataTypes.STRING(60), allowNull: true },
+        shipmentType: { type: DataTypes.STRING(60), allowNull: true },
+        commodityType: { type: DataTypes.STRING(60), allowNull: true },
+        origin: { type: DataTypes.STRING(150), allowNull: true },
+        originPort: { type: DataTypes.STRING(150), allowNull: true },
+        originCountry: { type: DataTypes.STRING(80), allowNull: true },
+        originFacilityType: { type: DataTypes.ENUM('CLOC', 'POTE', 'INTE'), allowNull: true },
+        destination: { type: DataTypes.STRING(150), allowNull: true },
+        destinationPort: { type: DataTypes.STRING(150), allowNull: true },
+        destinationCountry: { type: DataTypes.STRING(80), allowNull: true },
+        destinationFacilityType: { type: DataTypes.ENUM('CLOC', 'POTE', 'INTE'), allowNull: true },
+        departureDate: { type: DataTypes.DATEONLY, allowNull: true },
+        etdTime: { type: DataTypes.DATE, allowNull: true },
+        etaTime: { type: DataTypes.DATE, allowNull: true },
+        atdTime: { type: DataTypes.DATE, allowNull: true },
+        ataTime: { type: DataTypes.DATE, allowNull: true },
+        vessel: { type: DataTypes.STRING(120), allowNull: true },
+        imoNumber: { type: DataTypes.STRING(40), allowNull: true },
+        voyageNumber: { type: DataTypes.STRING(40), allowNull: true },
+        client: { type: DataTypes.STRING(250), allowNull: true },
+        clientAddress: { type: DataTypes.TEXT, allowNull: true },
+        shipper: { type: DataTypes.STRING(250), allowNull: true },
+        shipperAddress: { type: DataTypes.TEXT, allowNull: true },
+        shipperAccountNumbers: { type: DataTypes.STRING(120), allowNull: true },
+        consignee: { type: DataTypes.STRING(250), allowNull: true },
+        consigneeAddress: { type: DataTypes.TEXT, allowNull: true },
+        consigneeAccountNumbers: { type: DataTypes.STRING(120), allowNull: true },
+        cargoLines: { type: DataTypes.JSON, allowNull: true },
+        flightLines: { type: DataTypes.JSON, allowNull: true },
+        isDirectBooking: { type: DataTypes.BOOLEAN, defaultValue: false },
+        freightShipmentCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        freightDirectShipmentCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        cancelReason: { type: DataTypes.STRING(200), allowNull: true },
+        failBookingReason: { type: DataTypes.STRING(200), allowNull: true },
+        failBookingError: { type: DataTypes.TEXT, allowNull: true },
+        remarks: { type: DataTypes.TEXT, allowNull: true },
+        ffJobId: { type: DataTypes.UUID, allowNull: true },
+        masterShipmentId: { type: DataTypes.UUID, allowNull: true },
+        customerId: { type: DataTypes.UUID, allowNull: true },
+        carrierId: { type: DataTypes.UUID, allowNull: true },
+        companyId: { type: DataTypes.UUID, allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created freight_bookings table.');
+    }
+
+    if (!tables.includes('account_payments')) {
+      await qi.createTable('account_payments', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(60), allowNull: false, defaultValue: '/' },
+        paymentType: { type: DataTypes.ENUM('inbound', 'outbound'), defaultValue: 'inbound' },
+        paymentDate: { type: DataTypes.DATEONLY, allowNull: true },
+        journal: { type: DataTypes.STRING(120), allowNull: true },
+        journalId: { type: DataTypes.UUID, allowNull: true },
+        paymentMethod: { type: DataTypes.STRING(40), defaultValue: 'Manual' },
+        partner: { type: DataTypes.STRING(250), allowNull: true },
+        partnerId: { type: DataTypes.UUID, allowNull: true },
+        invoiceNumbers: { type: DataTypes.JSON, allowNull: true },
+        amount: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        state: { type: DataTypes.ENUM('draft', 'posted', 'sent', 'reconciled', 'cancel'), defaultValue: 'draft' },
+        memo: { type: DataTypes.STRING(250), allowNull: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created account_payments table.');
+    }
+
+    if (!tables.includes('pro_forma_invoices')) {
+      await qi.createTable('pro_forma_invoices', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(40), allowNull: false },
+        customer: { type: DataTypes.STRING(250), allowNull: true },
+        customerId: { type: DataTypes.UUID, allowNull: true },
+        serviceJobRefs: { type: DataTypes.JSON, allowNull: true },
+        houseShipmentRefs: { type: DataTypes.JSON, allowNull: true },
+        companyCurrency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        taxes: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        total: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        state: { type: DataTypes.ENUM('to_approve', 'approved', 'invoiced', 'cancel'), defaultValue: 'to_approve' },
+        invoiceId: { type: DataTypes.UUID, allowNull: true },
+        invoiceName: { type: DataTypes.STRING(60), allowNull: true },
+        lines: { type: DataTypes.JSON, allowNull: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created pro_forma_invoices table.');
+    }
+
+    if (!tables.includes('products')) {
+      await qi.createTable('products', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        internalReference: { type: DataTypes.STRING(60), allowNull: true },
+        name: { type: DataTypes.STRING(200), allowNull: false },
+        salesPrice: { type: DataTypes.DECIMAL(14, 2), defaultValue: 1 },
+        cost: { type: DataTypes.DECIMAL(14, 2), defaultValue: 0 },
+        customerTaxes: { type: DataTypes.JSON, allowNull: true },
+        vendorTaxes: { type: DataTypes.JSON, allowNull: true },
+        canBeSold: { type: DataTypes.BOOLEAN, defaultValue: true },
+        canBePurchased: { type: DataTypes.BOOLEAN, defaultValue: true },
+        category: { type: DataTypes.STRING(120), allowNull: true },
+        uom: { type: DataTypes.STRING(40), defaultValue: 'Units' },
+        incomeAccount: { type: DataTypes.STRING(120), allowNull: true },
+        expenseAccount: { type: DataTypes.STRING(120), allowNull: true },
+        active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created products table.');
+    }
+
+    if (!tables.includes('account_moves')) {
+      // One table behind Invoices, Credit/Debit Notes, Bills, Refunds and
+      // Journal Entries — `moveType` decides which menu a row belongs to.
+      await qi.createTable('account_moves', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(60), allowNull: false, defaultValue: '/' },
+        moveType: {
+          type: DataTypes.ENUM('entry', 'out_invoice', 'out_refund', 'out_debit',
+            'in_invoice', 'in_refund', 'in_debit'),
+          allowNull: false, defaultValue: 'out_invoice',
+        },
+        state: { type: DataTypes.ENUM('draft', 'posted', 'cancel'), defaultValue: 'draft' },
+        paymentState: {
+          type: DataTypes.ENUM('not_paid', 'in_payment', 'partial', 'paid', 'reversed'),
+          defaultValue: 'not_paid',
+        },
+        partner: { type: DataTypes.STRING(250), allowNull: true },
+        partnerId: { type: DataTypes.UUID, allowNull: true },
+        partnerAddress: { type: DataTypes.TEXT, allowNull: true },
+        paymentReference: { type: DataTypes.STRING(120), allowNull: true },
+        invoiceDate: { type: DataTypes.DATEONLY, allowNull: true },
+        invoiceDateDue: { type: DataTypes.DATEONLY, allowNull: true },
+        paymentTermLabel: { type: DataTypes.STRING(40), allowNull: true },
+        journal: { type: DataTypes.STRING(120), allowNull: true },
+        journalId: { type: DataTypes.UUID, allowNull: true },
+        label: { type: DataTypes.STRING(120), allowNull: true },
+        ref: { type: DataTypes.STRING(250), allowNull: true },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        companyCurrency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        amountUntaxed: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        amountTax: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        amountTotal: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        amountTotalCurrency: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        amountResidual: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        addChargesFrom: { type: DataTypes.ENUM('house', 'master', 'service_job'), allowNull: true },
+        chargeHouseShipments: { type: DataTypes.JSON, allowNull: true },
+        chargeMasterShipments: { type: DataTypes.JSON, allowNull: true },
+        chargeServiceJobs: { type: DataTypes.JSON, allowNull: true },
+        houseShipmentRefs: { type: DataTypes.JSON, allowNull: true },
+        masterShipmentRefs: { type: DataTypes.JSON, allowNull: true },
+        serviceJobRefs: { type: DataTypes.JSON, allowNull: true },
+        lines: { type: DataTypes.JSON, allowNull: true },
+        journalItems: { type: DataTypes.JSON, allowNull: true },
+        reversedEntryId: { type: DataTypes.UUID, allowNull: true },
+        reversedEntryName: { type: DataTypes.STRING(60), allowNull: true },
+        narration: { type: DataTypes.TEXT, allowNull: true },
+        toCheck: { type: DataTypes.BOOLEAN, defaultValue: false },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        companyId: { type: DataTypes.UUID, allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('account_moves', ['moveType'], { name: 'account_moves_type' });
+      await qi.addIndex('account_moves', ['state'], { name: 'account_moves_state' });
+      console.log('Created account_moves table.');
+    }
+
+    if (!tables.includes('account_journals')) {
+      // Accounting > Dashboard: one card per journal.
+      await qi.createTable('account_journals', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(120), allowNull: false },
+        code: { type: DataTypes.STRING(20), allowNull: true },
+        type: { type: DataTypes.ENUM('sale', 'purchase', 'bank', 'cash', 'general'), allowNull: false },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        bankAccNumber: { type: DataTypes.STRING(60), allowNull: true },
+        colour: { type: DataTypes.STRING(20), allowNull: true },
+        sequence: { type: DataTypes.INTEGER, defaultValue: 10 },
+        balanceGl: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        outstandingAmount: { type: DataTypes.DECIMAL(18, 2), allowNull: true },
+        latestStatement: { type: DataTypes.DECIMAL(18, 2), allowNull: true },
+        toReconcile: { type: DataTypes.INTEGER, defaultValue: 0 },
+        isConnected: { type: DataTypes.BOOLEAN, defaultValue: false },
+        toValidateCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        toValidateAmount: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        unpaidCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        unpaidAmount: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        lateCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        lateAmount: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        toCheckCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+        toCheckAmount: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        ageingBuckets: { type: DataTypes.JSON, allowNull: true },
+        sparkline: { type: DataTypes.JSON, allowNull: true },
+        companyId: { type: DataTypes.UUID, allowNull: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('account_journals', ['type'], { name: 'account_journals_type' });
+      console.log('Created account_journals table.');
+    }
+
+    if (!tables.includes('tms_requests')) {
+      // TMS > TMS Requests. Written by the system, read-only in the UI.
+      await qi.createTable('tms_requests', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(80), allowNull: false },
+        requestUuid: { type: DataTypes.STRING(80), allowNull: true },
+        providerMessageType: { type: DataTypes.STRING(60), allowNull: true },
+        requestDate: { type: DataTypes.DATE, allowNull: true },
+        requestCompleteDate: { type: DataTypes.DATE, allowNull: true },
+        resubmitUrl: { type: DataTypes.STRING(400), allowNull: true },
+        requestedBy: { type: DataTypes.STRING(150), allowNull: true },
+        requestedById: { type: DataTypes.UUID, allowNull: true },
+        providerStatus: { type: DataTypes.STRING(250), allowNull: true },
+        status: { type: DataTypes.ENUM('init', 'success', 'fail', 'invalid'), defaultValue: 'init' },
+        resModel: { type: DataTypes.STRING(80), allowNull: true },
+        resId: { type: DataTypes.STRING(80), allowNull: true },
+        reference: { type: DataTypes.STRING(150), allowNull: true },
+        jsonPayload: { type: DataTypes.TEXT, allowNull: true },
+        requestResponse: { type: DataTypes.TEXT, allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created tms_requests table.');
+    }
+
+    if (!tables.includes('permission_groups')) {
+      await qi.createTable('permission_groups', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        category: { type: DataTypes.STRING(60), allowNull: false },
+        name: { type: DataTypes.STRING(80), allowNull: false },
+        fullName: { type: DataTypes.STRING(160), allowNull: false },
+        description: { type: DataTypes.STRING(250), allowNull: true },
+        ownDocumentsOnly: { type: DataTypes.BOOLEAN, defaultValue: false },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('permission_groups', ['category', 'name'], { unique: true, name: 'permission_groups_cat_name' });
+      console.log('Created permission_groups table.');
+    }
+
+    if (!tables.includes('model_access')) {
+      await qi.createTable('model_access', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        model: { type: DataTypes.STRING(80), allowNull: false },
+        label: { type: DataTypes.STRING(120), allowNull: false },
+        groupId: { type: DataTypes.UUID, allowNull: true },
+        permRead: { type: DataTypes.BOOLEAN, defaultValue: false },
+        permWrite: { type: DataTypes.BOOLEAN, defaultValue: false },
+        permCreate: { type: DataTypes.BOOLEAN, defaultValue: false },
+        permDelete: { type: DataTypes.BOOLEAN, defaultValue: false },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('model_access', ['model'], { name: 'model_access_model' });
+      await qi.addIndex('model_access', ['groupId'], { name: 'model_access_group' });
+      console.log('Created model_access table.');
+    }
+
+    if (!tables.includes('user_groups')) {
+      await qi.createTable('user_groups', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        userId: { type: DataTypes.UUID, allowNull: false },
+        groupId: { type: DataTypes.UUID, allowNull: false },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('user_groups', ['userId', 'groupId'], { unique: true, name: 'user_groups_user_group' });
+      console.log('Created user_groups table.');
+    }
+
+    if (!tables.includes('app_settings')) {
+      // Configuration > Settings key/value store.
+      await qi.createTable('app_settings', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        category: { type: DataTypes.STRING(40), allowNull: false },
+        key: { type: DataTypes.STRING(80), allowNull: false },
+        value: { type: DataTypes.TEXT, allowNull: true },
+        kind: { type: DataTypes.ENUM('bool', 'text', 'number', 'select'), defaultValue: 'text' },
+        isSecret: { type: DataTypes.BOOLEAN, defaultValue: false },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('app_settings', ['category', 'key'], { unique: true, name: 'app_settings_category_key' });
+      console.log('Created app_settings table.');
+    }
+
+    if (!tables.includes('calendar_events')) {
+      // Calendar > Meetings.
+      await qi.createTable('calendar_events', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(250), allowNull: false },
+        start: { type: DataTypes.DATE, allowNull: false },
+        stop: { type: DataTypes.DATE, allowNull: false },
+        duration: { type: DataTypes.FLOAT, defaultValue: 1 },
+        allday: { type: DataTypes.BOOLEAN, defaultValue: false },
+        eventTz: { type: DataTypes.STRING(60), allowNull: true },
+        organizer: { type: DataTypes.STRING(150), allowNull: true },
+        organizerId: { type: DataTypes.UUID, allowNull: true },
+        attendees: { type: DataTypes.JSON, allowNull: true },
+        location: { type: DataTypes.STRING(250), allowNull: true },
+        videocallLocation: { type: DataTypes.STRING(250), allowNull: true },
+        description: { type: DataTypes.TEXT, allowNull: true },
+        alarms: { type: DataTypes.JSON, allowNull: true },
+        tags: { type: DataTypes.JSON, allowNull: true },
+        privacy: { type: DataTypes.ENUM('public', 'private', 'confidential'), defaultValue: 'public' },
+        showAs: { type: DataTypes.ENUM('free', 'busy'), defaultValue: 'busy' },
+        recurrency: { type: DataTypes.BOOLEAN, defaultValue: false },
+        interval: { type: DataTypes.INTEGER, defaultValue: 1 },
+        rruleType: { type: DataTypes.ENUM('daily', 'weekly', 'monthly', 'yearly'), defaultValue: 'weekly' },
+        endType: { type: DataTypes.ENUM('count', 'end_date', 'forever'), defaultValue: 'count' },
+        count: { type: DataTypes.INTEGER, defaultValue: 1 },
+        until: { type: DataTypes.DATEONLY, allowNull: true },
+        monthBy: { type: DataTypes.ENUM('date', 'day'), defaultValue: 'date' },
+        day: { type: DataTypes.INTEGER, allowNull: true },
+        byday: { type: DataTypes.STRING(4), allowNull: true },
+        weekday: { type: DataTypes.STRING(4), allowNull: true },
+        weekdays: { type: DataTypes.JSON, allowNull: true },
+        resModel: { type: DataTypes.STRING(80), allowNull: true },
+        resId: { type: DataTypes.STRING(80), allowNull: true },
+        resName: { type: DataTypes.STRING(250), allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created calendar_events table.');
+    }
+
     if (!tables.includes('purchase_orders')) {
       // Procurement > Purchase: POs raised against a shipment.
       await qi.createTable('purchase_orders', {
@@ -1489,6 +1880,42 @@ const PARTY_TYPES = [
   'Miami', 'shipper', 'Transporter', 'United State', 'United States',
 ];
 
+// Reminders offered by the Meeting form (calendar.alarm).
+const CALENDAR_ALARMS = [
+  'Notification - 15 Minutes', 'Notification - 30 Minutes', 'Notification - 1 Hours',
+  'Notification - 2 Hours', 'Notification - 1 Days', 'Email - 3 Hours', 'Email - 6 Hours',
+];
+
+const CALENDAR_TAGS = ['Interview'];
+
+// Meetings from the live demo. Times are the local values the list view shows.
+// [name, start, durationHours, organizer, attendees[], description, resModel]
+const CALENDAR_EVENTS = [
+  ['Business call', '2025-11-20 05:30', 1, 'Sivaranjani (Tech Support)', ['S-2: Sivaranjani (Tech Support)'], 'Business call at 10:00 PST', 'house.shipment'],
+  ['LE/2025/00253', '2025-10-24 05:30', 0.5, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'prospect.lead'],
+  ['Customer need a meeting with salesperson', '2025-10-16 13:30', 0.5, 'Neela Manikandan Karunanithi', ['NMK-1: Neela Manikandan Karunanithi'], '', 'house.shipment'],
+  ['Meeting with a client', '2025-10-15 05:30', 1, 'Sivaranjani (Tech Support)', ['A-13: Ashish', 'S-2: Sivaranjani (Tech Support)'], '', ''],
+  ['Meeting with a client', '2025-10-13 05:30', 1, 'Sivaranjani (Tech Support)', ['S-2: Sivaranjani (Tech Support)'], '', 'house.shipment'],
+  ['HBLSR01518', '2025-09-16 07:30', 0.5, 'Syed Zafar (Tech Support)', ['S-1: Syed Zafar (Tech Support)'], '', 'house.shipment'],
+  ['LE/2023/00007', '2025-08-13 10:30', 0.5, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'prospect.lead'],
+  ['A-10: AMGAD', '2025-08-10 11:00', 0.5, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'organization'],
+  ['A-10: AMGAD', '2025-08-05 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'organization'],
+  ['LE/2025/00239', '2025-07-27 18:00', 0.5, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'prospect.lead'],
+  ['LE/2025/00239', '2025-07-25 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'prospect.lead'],
+  ['QT-SEA-EXP-FCL/2024/00123', '2025-07-18 05:30', 1, 'Deepak Dobal', ['DD-1: Deepak Dobal'], 'shdrjhjrsjt', 'quotation'],
+  ['OP/2023/00005', '2025-07-12 08:00', 0.5, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'opportunity'],
+  ['OP/2023/00005', '2025-07-08 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'opportunity'],
+  ['discussion on teus', '2025-06-12 05:30', 1, 'Hameed Fayaz', ['HF-1: Hameed Fayaz'], '', 'prospect.lead'],
+  ['LE/2023/00004', '2025-02-25 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'prospect.lead'],
+  ['virtual meeting dosc ussion', '2024-11-27 10:30', 0.5, 'Mansi (Tech Support)', [], 'dsdssdsd Feedback: meeting is done', 'opportunity'],
+  ['meetinglead followup', '2024-11-26 11:00', 0.5, 'Mansi (Tech Support)', [], '', 'prospect.lead'],
+  ['July 24', '2024-07-30 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'sale.target'],
+  ['QT-SEA-EXP-LCL/2024/00216', '2024-07-18 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'quotation'],
+  ['Business Meeting', '2024-07-10 05:30', 1, 'DilliBabu (Tech Support)', ['SDCD-1: Sample Demo Customer Dubai'], '', 'organization'],
+  ['QT-SEA-EXP-FCL/2024/00194', '2024-06-18 05:30', 1, 'Gyanesh Singh', ['GS-1: Gyanesh Singh'], '', 'quotation'],
+  ['Cost part', '2024-04-14 15:00', 0.5, 'Administrator', ['A-55: Administrator'], '', 'organization'],
+];
+
 // Purchase orders from the live demo.
 // [poNumber, poDate, vendor, shipmentNo, state, priority, amountTotal, billCount]
 const PURCHASE_ORDERS = [
@@ -1773,6 +2200,559 @@ const seedOperationsData = async () => {
         })
       ));
       console.log(`Seeded ${RMS_TARIFFS.length} RMS tariffs.`);
+    }
+
+    // Configuration > Settings defaults. Integration keys ship BLANK on
+    // purpose — paste real credentials into the UI at runtime so they live in
+    // the database and never in the repo.
+    const { AppSetting } = require('../models');
+    const SETTING_DEFAULTS = [
+      ['freight_booking', 'json_payload', 'Carrier Booking JSON Data Main Schema', 'select', false],
+      ['freight_booking', 'cargoai_enabled', 'true', 'bool', false],
+      ['freight_booking', 'cargoai_product_key', '', 'text', true],
+      ['freight_booking', 'buyco_enabled', 'true', 'bool', false],
+      ['freight_booking', 'buyco_product_key', '', 'text', true],
+      ['tms', 'json_payload', 'Global TMS JSON Data Main Schema', 'select', false],
+      ['freight_schedule', 'oag_enabled', 'true', 'bool', false],
+      ['freight_schedule', 'oag_environment', 'sandbox', 'select', false],
+      ['freight_schedule', 'oag_api_key', '', 'text', true],
+      ['freight_schedule', 'inttra_enabled', 'true', 'bool', false],
+      ['freight_schedule', 'inttra_environment', 'sandbox', 'select', false],
+      ['freight_schedule', 'inttra_client_id', '', 'text', true],
+      ['freight_schedule', 'inttra_client_secret', '', 'text', true],
+      ['freight_schedule', 'searates_schedule_enabled', 'false', 'bool', false],
+      ['crm', 'multi_teams', 'true', 'bool', false],
+      ['crm', 'enable_party_types', 'true', 'bool', false],
+      ['crm', 'enable_prospect_mandatory', 'false', 'bool', false],
+      ['crm', 'enable_target_non_mandatory', 'true', 'bool', false],
+      ['freight', 'pickup_type', '[PUD] Pickup', 'select', false],
+      ['freight', 'on_carriage_type', '[OCAG] On Carriage', 'select', false],
+      ['freight', 'pre_carriage_type', '[PCAG] Pre Carriage', 'select', false],
+      ['freight', 'delivery_type', '[DLV] Delivery', 'select', false],
+      ['freight', 'file_size_limit_mb', '5', 'number', false],
+      ['freight', 'max_document_history', '3', 'number', false],
+      ['freight', 'customer_kyc', 'true', 'bool', false],
+      ['freight', 'margin_percent', '0', 'number', false],
+      ['freight', 'margin_revenue', '0', 'number', false],
+      ['freight', 'indirect_cost_as_expense', 'true', 'bool', false],
+      ['freight', 'show_contact_prefix', 'true', 'bool', false],
+      ['freight', 're_export_shipment', 'true', 'bool', false],
+      ['freight', 'container_length_validation', 'true', 'bool', false],
+      ['freight', 'container_iso6346_validation', 'true', 'bool', false],
+      ['freight', 'enable_part_bl', 'true', 'bool', false],
+      ['freight', 'export_to_import', 'true', 'bool', false],
+      ['freight', 'scac_prefix_master', 'false', 'bool', false],
+      ['freight', 'party_types_master', 'true', 'bool', false],
+      ['freight', 'load_calculator_enabled', 'true', 'bool', false],
+      ['freight', 'load_calculator_api_key', '', 'text', true],
+      ['freight', 'shipment_tracking_enabled', 'true', 'bool', false],
+      ['freight', 'tracking_provider', 'searates', 'select', false],
+      ['freight', 'searates_product_key', '', 'text', true],
+      ['freight', 'tracking_update_frequency_hours', '2', 'number', false],
+      ['freight', 'create_house_from_master', 'true', 'bool', false],
+      ['freight', 'charge_master_migration', 'true', 'bool', false],
+      ['freight', 'cut_off_dates', 'true', 'bool', false],
+      ['freight', 'footer_details', 'false', 'bool', false],
+      ['freight', 'shipper_consignee_non_mandatory', 'false', 'bool', false],
+      ['freight', 'status_change_without_hbl', 'false', 'bool', false],
+      ['freight', 'external_carrier_bookings', 'false', 'bool', false],
+      ['freight', 'proforma_service_job', 'true', 'bool', false],
+      ['freight', 'fiata_username', '', 'text', true],
+      ['freight', 'fiata_password', '', 'text', true],
+      ['freight', 'fiata_forwarder_id', '', 'text', true],
+      ['freight', 'transportation_container_details', 'true', 'bool', false],
+      ['freight', 'stop_mawb_validation', 'true', 'bool', false],
+      ['freight', 'enable_quote_routing', 'false', 'bool', false],
+      ['freight', 'enable_temporary_party', 'false', 'bool', false],
+      ['general', 'packs_uom', 'BAG (Bag)', 'select', false],
+      ['general', 'weight_uom', 'kg', 'select', false],
+      ['general', 'volume_uom', 'm³', 'select', false],
+      ['general', 'dimension_uom', 'cm', 'select', false],
+      ['general', 'volumetric_divided_value', '5000', 'number', false],
+      ['general', 'customer_account_mode', 'invitation', 'select', false],
+      ['general', 'password_reset', 'true', 'bool', false],
+      ['general', 'default_access_rights', 'true', 'bool', false],
+      ['general', 'audit_log', 'true', 'bool', false],
+      ['general', 'audit_log_days', '180', 'number', false],
+      ['general', 'google_drive', 'true', 'bool', false],
+      ['general', 'unsplash', 'true', 'bool', false],
+      ['general', 'recaptcha', 'true', 'bool', false],
+      ['general', 'recaptcha_min_score', '0.50', 'number', false],
+      ['website', 'name', 'CargoFlo', 'text', false],
+      ['website', 'domain', '', 'text', false],
+      ['website', 'cookies_bar', 'false', 'bool', false],
+      ['website', 'social_media', 'false', 'bool', false],
+      ['website', 'google_maps', 'false', 'bool', false],
+      ['website', 'google_analytics', 'false', 'bool', false],
+      ['customs', 'subscriber_uuid', '', 'text', true],
+      ['customs', 'subscription_date', '', 'text', false],
+      ['customs', 'retain_completed_queue_days', '60', 'number', false],
+      ['customs', 'retry_count', '5', 'number', false],
+      ['invoicing', 'custom_reference_number', 'false', 'bool', false],
+      ['invoicing', 'fiscal_year_last_month', 'December', 'select', false],
+      ['invoicing', 'fiscal_year_last_day', '31', 'number', false],
+      ['invoicing', 'deferred_revenue', 'true', 'bool', false],
+      ['invoicing', 'fixed_assets', 'true', 'bool', false],
+      ['invoicing', 'lumpsum_discount', 'true', 'bool', false],
+      ['invoicing', 'sales_tax', 'VAT 5% (Dubai)', 'select', false],
+      ['invoicing', 'purchase_tax', 'VAT 5%', 'select', false],
+      ['invoicing', 'rounding_method', 'globally', 'select', false],
+      ['invoicing', 'fiscal_country', 'United Arab Emirates', 'select', false],
+      ['invoicing', 'main_currency', 'AED', 'select', false],
+      ['invoicing', 'multi_currency_adjust', 'true', 'bool', false],
+      ['invoicing', 'invoice_print', 'true', 'bool', false],
+      ['invoicing', 'invoice_send_email', 'true', 'bool', false],
+      ['invoicing', 'line_subtotals', 'tax_excluded', 'select', false],
+      ['invoicing', 'invoice_warnings', 'true', 'bool', false],
+      ['invoicing', 'default_terms', 'true', 'bool', false],
+      ['invoicing', 'credit_limit_type', 'Organization Level Credit Limit', 'select', false],
+      ['invoicing', 'restrict_document_print', 'true', 'bool', false],
+      ['invoicing', 'invoice_online_payment', 'true', 'bool', false],
+      ['invoicing', 'qr_codes', 'false', 'bool', false],
+      ['invoicing', 'pdc_payments', 'true', 'bool', false],
+      ['invoicing', 'wip_automation', 'true', 'bool', false],
+      ['invoicing', 'analytic_accounting', 'true', 'bool', false],
+      ['invoicing', 'analytic_tags', 'true', 'bool', false],
+      ['invoicing', 'margin_analysis', 'true', 'bool', false],
+    ];
+    for (const [category, key, value, kind, isSecret] of SETTING_DEFAULTS) {
+      await AppSetting.findOrCreate({
+        where: { category, key },
+        defaults: { category, key, value, kind, isSecret },
+      });
+    }
+
+    // ── Accounting journals (Dashboard cards) ──
+    const { AccountJournal } = require('../models');
+    if ((await AccountJournal.count()) === 0) {
+      const { JOURNALS, ageingLabels, shape } = require('./seedData/accountJournals');
+      const labels = ageingLabels();
+      const dubai = await Company.findOne({ where: { code: 'SR-DXB' } });
+      await AccountJournal.bulkCreate(JOURNALS.map(
+        ([name, type, code, bankAccNumber, balanceGl, outstanding, latest,
+          toReconcile, isConnected, counters, colour], i) => {
+          const c = counters || [0, 0, 0, 0, 0, 0, 0, 0];
+          const seed = i + 7;
+          return {
+            name, type, code, bankAccNumber,
+            currency: name === 'Bank of America' ? 'USD' : 'AED',
+            colour: colour || null,
+            sequence: (i + 1) * 10,
+            balanceGl: balanceGl || 0,
+            outstandingAmount: outstanding,
+            latestStatement: latest,
+            toReconcile: toReconcile || 0,
+            isConnected: !!isConnected,
+            toValidateCount: c[0], toValidateAmount: c[1],
+            unpaidCount: c[2], unpaidAmount: c[3],
+            lateCount: c[4], lateAmount: c[5],
+            toCheckCount: c[6], toCheckAmount: c[7],
+            // Sale/purchase cards carry the six ageing columns; bank/cash carry
+            // a sparkline instead.
+            ageingBuckets: ['sale', 'purchase'].includes(type)
+              ? labels.map((label, b) => ({ label, amount: shape(seed + b, 1, Number(c[3]) || 0)[0] }))
+              : [],
+            sparkline: ['bank', 'cash'].includes(type) ? shape(seed, 12, 100) : [],
+            companyId: dubai?.id || null,
+            company: dubai?.name || 'SearatesERP (Dubai)',
+            active: true,
+          };
+        }
+      ));
+      console.log(`Seeded ${JOURNALS.length} account journals.`);
+    }
+
+    // ── Accounting moves (invoices, credit notes, debit notes) ──
+    const { AccountMove } = require('../models');
+    if ((await AccountMove.count()) === 0) {
+      const { INVOICES, CREDIT_NOTES, DEBIT_NOTES, PRODUCTS } = require('./seedData/accountMoves');
+      const journals = await AccountJournal.findAll({ raw: true });
+      const jByName = Object.fromEntries(journals.map((j) => [j.name, j]));
+
+      // Build the invoice lines that produce a row's stored total.
+      const linesFor = (untaxed, total, house, seedIdx) => {
+        if (!untaxed && !total) return [];
+        const p = PRODUCTS[seedIdx % PRODUCTS.length];
+        const vat = Math.round((Number(total) - Number(untaxed)) * 100) / 100;
+        const rate = Number(untaxed) ? Math.round((vat / Number(untaxed)) * 100) : 0;
+        return [{
+          kind: 'line',
+          houseShipment: house || '',
+          product: p[0],
+          label: p[0].replace(/^\[\w+\]\s*/, ''),
+          account: p[1],
+          exRate: 1,
+          amountQty: Number(untaxed),
+          chargeCurrency: 'AED',
+          analyticAccount: '',
+          analyticTags: [],
+          quantity: 1,
+          price: Number(untaxed),
+          discount: 0,
+          taxes: rate ? `VAT ${rate}%` : 'VAT 0%',
+          taxRate: rate,
+          vatAmount: vat,
+          subtotal: Number(untaxed),
+        }];
+      };
+
+      // Posted records carry the double-entry rows the Journal Items tab shows.
+      const itemsFor = (m, lines) => {
+        if (m.state !== 'posted') return [];
+        const rows = lines.map((l) => ({
+          account: l.account, label: l.label, partner: m.partner,
+          debit: 0, credit: Number(l.subtotal || 0), currency: m.currency,
+        }));
+        if (Number(m.amountTax || 0)) {
+          rows.push({ account: '201005 VAT Payable', label: l0(lines), partner: m.partner,
+            debit: 0, credit: Number(m.amountTax), currency: m.currency });
+        }
+        rows.push({ account: '101001 Accounts Receivable', label: m.name, partner: m.partner,
+          debit: Number(m.amountTotal || 0), credit: 0, currency: m.currency });
+        return rows;
+      };
+      const l0 = (lines) => (lines[0]?.taxes || 'VAT');
+
+      const mk = (rows, moveType, journalName, prefix) => rows.map((r, i) => {
+        const [partner, house, master, invDate, dueDate, cur, untaxed, total,
+          invCur, totalInCur, paymentState, state, reversed] = r;
+        const lines = linesFor(untaxed, total, house, i);
+        const year = (invDate || '2026-01-01').slice(0, 4);
+        const move = {
+          name: state === 'draft' ? '/' : `${prefix}/${year}/${String(i + 1).padStart(5, '0')}`,
+          moveType, state, paymentState,
+          partner, partnerAddress: partner,
+          invoiceDate: invDate || null,
+          invoiceDateDue: dueDate || null,
+          journal: journalName,
+          journalId: jByName[journalName]?.id || null,
+          currency: invCur || cur,
+          companyCurrency: cur,
+          amountUntaxed: untaxed, amountTax: Math.round((total - untaxed) * 100) / 100,
+          amountTotal: total, amountTotalCurrency: totalInCur,
+          amountResidual: paymentState === 'paid' ? 0 : total,
+          addChargesFrom: house ? 'house' : null,
+          chargeHouseShipments: house ? [house] : [],
+          houseShipmentRefs: house ? [house] : [],
+          masterShipmentRefs: master ? [master] : [],
+          serviceJobRefs: /^(SJ|Service Job)/i.test(house || '') ? [house] : [],
+          lines,
+          reversedEntryName: reversed || null,
+          ref: reversed ? `Reversal of: ${reversed}, None` : null,
+          company: 'SearatesERP (Dubai)',
+          followerCount: 1,
+          activityLog: [{
+            at: new Date(invDate || Date.now()).toISOString(),
+            author: 'Anix Logistics PVT LTD', kind: 'log',
+            body: moveType === 'out_refund' ? 'Credit Note Created' : 'Invoice Created',
+            changes: [],
+          }],
+        };
+        move.journalItems = itemsFor(move, lines);
+        return move;
+      });
+
+      await AccountMove.bulkCreate([
+        ...mk(INVOICES, 'out_invoice', 'Customer Invoices', 'INV'),
+        ...mk(CREDIT_NOTES, 'out_refund', 'Customer Invoices', 'RINV'),
+        ...mk(DEBIT_NOTES, 'out_debit', 'Customer Debit Note', 'BDN'),
+      ], { individualHooks: false });
+      console.log(`Seeded ${INVOICES.length + CREDIT_NOTES.length + DEBIT_NOTES.length} account moves.`);
+    }
+
+    // ── Accounting wave 4: payments, pro formas, products ──
+    const { AccountPayment, ProFormaInvoice, Product } = require('../models');
+    const wave4 = require('./seedData/accountingWave4');
+
+    if ((await AccountPayment.count()) === 0) {
+      const journals = await AccountJournal.findAll({ raw: true });
+      // Bank journals are listed by their account number on the payments list.
+      const jByRef = {};
+      for (const j of journals) {
+        if (j.bankAccNumber) jByRef[j.bankAccNumber] = j;
+        jByRef[j.name] = jByRef[j.name] || j;
+      }
+      await AccountPayment.bulkCreate(wave4.PAYMENTS.map(
+        ([date, name, journal, method, partner, invoices, amount, state]) => ({
+          name,
+          // Vendor payments carry a PBNK/BILL prefix in the demo; everything
+          // else on this list is money coming in.
+          paymentType: /^(PBNK|BILL|PAY-OUT)/.test(name) ? 'outbound' : 'inbound',
+          paymentDate: date,
+          journal,
+          journalId: jByRef[journal]?.id || null,
+          paymentMethod: method,
+          partner,
+          invoiceNumbers: invoices,
+          amount,
+          currency: 'AED',
+          state,
+          company: 'SearatesERP (Dubai)',
+          followerCount: 1,
+          activityLog: [{
+            at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
+            kind: 'log', body: 'Payment Created', changes: [],
+          }],
+        })
+      ), { individualHooks: false });
+      console.log(`Seeded ${wave4.PAYMENTS.length} account payments.`);
+    }
+
+    if ((await ProFormaInvoice.count()) === 0) {
+      await ProFormaInvoice.bulkCreate(wave4.PRO_FORMAS.map(
+        ([customer, name, serviceJob, house, taxes, total, currency, state]) => {
+          const untaxed = Math.round((Number(total) - Number(taxes)) * 100) / 100;
+          const rate = untaxed ? Math.round((Number(taxes) / untaxed) * 100) : 0;
+          return {
+            name, customer,
+            serviceJobRefs: serviceJob ? [serviceJob] : [],
+            houseShipmentRefs: house ? [house] : [],
+            companyCurrency: 'AED',
+            currency: currency || 'AED',
+            taxes, total, state,
+            lines: [{
+              product: '[MCAG] Main Carriage',
+              label: 'Main Carriage',
+              houseShipment: house || '',
+              quantity: 1,
+              price: untaxed,
+              taxes: rate ? `VAT ${rate}%` : 'VAT 0%',
+              taxRate: rate,
+              vatAmount: taxes,
+              subtotal: untaxed,
+            }],
+            company: 'SearatesERP (Dubai)',
+            followerCount: 1,
+            activityLog: [{
+              at: new Date('2026-01-01').toISOString(), author: 'Anix Logistics PVT LTD',
+              kind: 'log', body: 'Pro Forma Invoice Created', changes: [],
+            }],
+          };
+        }
+      ), { individualHooks: false });
+      console.log(`Seeded ${wave4.PRO_FORMAS.length} pro forma invoices.`);
+    }
+
+    if ((await Product.count()) === 0) {
+      await Product.bulkCreate(wave4.PRODUCTS.map(
+        ([ref, name, price, custTaxes, vendTaxes]) => ({
+          internalReference: ref || null,
+          name,
+          salesPrice: price,
+          cost: 0,
+          customerTaxes: custTaxes,
+          vendorTaxes: vendTaxes,
+          canBeSold: true,
+          canBePurchased: true,
+          category: 'Services',
+          uom: 'Units',
+        })
+      ), { individualHooks: false });
+      console.log(`Seeded ${wave4.PRODUCTS.length} products.`);
+    }
+
+    // ── TMS requests ──
+    const { TMSRequest } = require('../models');
+    if ((await TMSRequest.count()) === 0) {
+      const { ROWS, payloadFor, responseFor } = require('./seedData/tmsRequests');
+      const { randomUUID } = require('crypto');
+      await TMSRequest.bulkCreate(ROWS.map(([name, at, by]) => {
+        const uuid = randomUUID();
+        const started = new Date(at.replace(' ', 'T'));
+        return {
+          name,
+          requestUuid: uuid,
+          providerMessageType: null,
+          requestDate: started,
+          // The provider answered a few seconds later.
+          requestCompleteDate: new Date(started.getTime() + 4000),
+          resubmitUrl: null,
+          requestedBy: by,
+          providerStatus: 'Resource created successfully',
+          status: 'success',
+          resModel: 'house.shipment',
+          reference: name,
+          jsonPayload: payloadFor(name, started.toISOString()),
+          requestResponse: responseFor(uuid),
+          followerCount: 1,
+          activityLog: [{
+            at: started.toISOString(), author: by, kind: 'log',
+            body: 'TMS Request created', changes: [],
+          }],
+        };
+      }), { individualHooks: false });
+      console.log(`Seeded ${ROWS.length} TMS requests.`);
+    }
+
+    // ── Access control: groups, ACL rows, and the admin's memberships ──
+    const { PermissionGroup, ModelAccess, UserGroup } = require('../models');
+    const { GROUPS, MODELS, ACL } = require('./seedData/accessControl');
+
+    for (const [category, name, ownOnly] of GROUPS) {
+      await PermissionGroup.findOrCreate({
+        where: { category, name },
+        defaults: { category, name, fullName: `${category} / ${name}`, ownDocumentsOnly: !!ownOnly },
+      });
+    }
+
+    {
+      // Topped up per model+group rather than seeded once, so a later wave that
+      // adds a model gets its rules on an existing database too.
+      const groups = await PermissionGroup.findAll({ raw: true });
+      const byFullName = Object.fromEntries(groups.map((g) => [g.fullName, g.id]));
+      const labelByModel = Object.fromEntries(MODELS);
+      let added = 0;
+      for (const [model, entries] of Object.entries(ACL)) {
+        for (const [fullName, perms] of entries) {
+          const groupId = byFullName[fullName];
+          if (!groupId) continue;
+          const [, created] = await ModelAccess.findOrCreate({
+            where: { model, groupId },
+            defaults: {
+              model,
+              label: labelByModel[model] || model,
+              groupId,
+              permRead: perms[0] === '1',
+              permWrite: perms[1] === '1',
+              permCreate: perms[2] === '1',
+              permDelete: perms[3] === '1',
+            },
+          });
+          if (created) added += 1;
+        }
+      }
+      if (added) console.log(`Seeded ${added} model access rules.`);
+    }
+
+    // Holding "Administration / Settings" is what makes someone a superuser, so
+    // every existing admin must be granted it or the new ACL would lock them
+    // out of their own system.
+    const settingsGroup = await PermissionGroup.findOne({ where: { category: 'Administration', name: 'Settings' } });
+    if (settingsGroup) {
+      const admins = await User.findAll({ where: { role: 'admin' }, attributes: ['id'], raw: true });
+      for (const a of admins) {
+        await UserGroup.findOrCreate({
+          where: { userId: a.id, groupId: settingsGroup.id },
+          defaults: { userId: a.id, groupId: settingsGroup.id },
+        });
+      }
+      if (admins.length) console.log(`Granted Administration / Settings to ${admins.length} admin user(s).`);
+    }
+
+    const { FreightBooking } = require('../models');
+    if ((await FreightBooking.count()) === 0) {
+      const { decode, cargoFor, flightFor } = require('./seedData/freightBookings');
+      const rows = decode();
+      // Cancelled/failed AIR bookings keep the carrier's reason text.
+      const FAIL_REASON = 'Rate no longer available at the requested price.';
+      await FreightBooking.bulkCreate(rows.map((b) => {
+        const air = b.tc === 'AIR';
+        const confirmed = b.as === 'booking_confirmed';
+        const cargo = cargoFor(b.n);
+        const log = [{
+          at: new Date(b.dd || b.etd || Date.now()).toISOString(),
+          author: b.u || 'Administrator',
+          kind: 'log', body: 'Freight Booking Request created', changes: [],
+        }];
+        if (air && b.as !== 'created') {
+          log.unshift({
+            at: new Date(b.dd || Date.now()).toISOString(),
+            author: b.u || 'Administrator', kind: 'log', body: '',
+            changes: [{ field: 'Air Status', from: 'Created', to: b.as.replace(/_/g, ' ') }],
+          });
+        }
+        return {
+          bookingReference: b.n,
+          bookingNumber: b.bn || null,
+          transportCode: b.tc,
+          modeType: b.tc === 'SEA' ? 'sea' : 'air',
+          status: b.st,
+          airStatus: b.as,
+          providerStatus: b.ps || null,
+          carrierIdentifier: b.ca === 'Buyco' ? 'BYCO' : null,
+          subscriptionStatus: 'active',
+          paymentTerms: b.pt || null,
+          incoterm: b.ic || null,
+          company: b.co || null,
+          transportMode: b.tc === 'SEA' ? '[SEA] Sea Freight' : '[AIR] Air Freight',
+          carrier: b.ca || null,
+          cargoType: b.ct || null,
+          assignedTo: b.u || null,
+          assignedToVerified: true,
+          trackingNumber: b.awb || null,
+          airline: b.al || null,
+          flightNo: b.fn || null,
+          serviceMode: b.sm || null,
+          shipmentType: b.sty || null,
+          commodityType: cargo[0]?.commodity?.replace(/^\[\w+\]\s*/, '') || null,
+          originPort: b.op || null,
+          destinationPort: b.dp || null,
+          departureDate: b.dd || null,
+          etdTime: b.etd || null,
+          etaTime: b.eta || null,
+          client: b.cl || null,
+          clientAddress: b.cl || null,
+          shipper: b.sh || null,
+          shipperAddress: b.sh || null,
+          consignee: b.cn || null,
+          consigneeAddress: b.cn || null,
+          cargoLines: cargo,
+          flightLines: confirmed ? flightFor(b.n, b.al, b.fn, b.op || '', b.dp || '') : [],
+          failBookingReason: b.as === 'booking_failed' ? FAIL_REASON : null,
+          failBookingError: b.as === 'booking_failed' ? 'CARRIER_RATE_EXPIRED' : null,
+          followerCount: 1,
+          activityLog: log,
+        };
+      }), { individualHooks: false });
+      console.log(`Seeded ${rows.length} freight bookings.`);
+    }
+
+    // MasterDataItem is destructured again further down, so alias it here.
+    const { CalendarEvent, MasterDataItem: CalendarPicklist } = require('../models');
+    if ((await CalendarEvent.count()) === 0) {
+      await CalendarEvent.bulkCreate(CALENDAR_EVENTS.map(
+        ([name, start, duration, organizer, attendees, description, resModel]) => {
+          const startAt = new Date(start.replace(' ', 'T') + ':00');
+          return {
+            name,
+            start: startAt,
+            stop: new Date(startAt.getTime() + duration * 3600000),
+            duration,
+            allday: false,
+            organizer,
+            attendees: attendees.map((label) => ({
+              name: label, email: '', status: 'needsAction',
+            })),
+            description: description || null,
+            privacy: 'public',
+            showAs: 'busy',
+            recurrency: false,
+            resModel: resModel || null,
+            resName: resModel ? name : null,
+            followerCount: 1,
+            activityLog: [{
+              at: startAt.toISOString(),
+              author: organizer,
+              kind: 'log', body: 'Calendar Event created', changes: [],
+            }],
+          };
+        }
+      ), { individualHooks: false });
+      console.log(`Seeded ${CALENDAR_EVENTS.length} calendar events.`);
+    }
+
+    // Reminders and Tags are picklists on the Meeting form.
+    for (const label of CALENDAR_ALARMS) {
+      await CalendarPicklist.findOrCreate({
+        where: { category: 'calendar-alarms', name: label },
+        defaults: { category: 'calendar-alarms', name: label, isActive: true },
+      });
+    }
+    for (const label of CALENDAR_TAGS) {
+      await CalendarPicklist.findOrCreate({
+        where: { category: 'calendar-tags', name: label },
+        defaults: { category: 'calendar-tags', name: label, isActive: true },
+      });
     }
 
     const { PurchaseOrder } = require('../models');

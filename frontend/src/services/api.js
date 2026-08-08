@@ -214,6 +214,134 @@ export const purchaseOrdersAPI = {
   getBills: (id) => api.get(`${PO}/${id}/bills`),
 };
 
+// ─── Accounting ──────────────────────────────────────────────────────────────
+const MV = '/accounting/moves';
+const PAY = '/accounting/payments';
+const PF = '/accounting/pro-formas';
+const PROD = '/accounting/products';
+export const accountingAPI = {
+  // Dashboard
+  dashboard: () => api.get('/accounting/journals/dashboard'),
+  journals: (params) => api.get('/accounting/journals', { params }),
+  connectJournal: (id) => api.post(`/accounting/journals/${id}/connect`),
+  reconcileJournal: (id) => api.post(`/accounting/journals/${id}/reconcile`),
+
+  // Moves — invoices, credit notes, debit notes, bills, refunds, entries
+  list: (params) => api.get(MV, { params }),
+  getById: (id) => api.get(`${MV}/${id}`),
+  create: (data, menu) => api.post(MV, data, { params: { menu } }),
+  update: (id, data) => api.put(`${MV}/${id}`, data),
+  delete: (id) => api.delete(`${MV}/${id}`),
+  confirm: (id, data) => api.post(`${MV}/${id}/confirm`, data || {}),
+  cancel: (id) => api.post(`${MV}/${id}/cancel`),
+  resetToDraft: (id) => api.post(`${MV}/${id}/reset-to-draft`),
+  pullCharges: (id, kind, refs) => api.post(`${MV}/${id}/pull-charges`, { kind, refs }),
+  sources: (kind) => api.get(`${MV}/sources`, { params: { kind } }),
+  facets: (menu) => api.get(`${MV}/facets`, { params: { menu } }),
+  addActivity: (id, data) => api.post(`${MV}/${id}/activity`, data),
+
+  // Payments — the same table backs the customer and vendor menus
+  payments: (params) => api.get(PAY, { params }),
+  payment: (id) => api.get(`${PAY}/${id}`),
+  createPayment: (data, menu) => api.post(PAY, data, { params: { menu } }),
+  updatePayment: (id, data) => api.put(`${PAY}/${id}`, data),
+  deletePayment: (id) => api.delete(`${PAY}/${id}`),
+  confirmPayment: (id) => api.post(`${PAY}/${id}/confirm`),
+  cancelPayment: (id) => api.post(`${PAY}/${id}/cancel`),
+  resetPayment: (id) => api.post(`${PAY}/${id}/reset-to-draft`),
+  paymentFacets: (menu) => api.get(`${PAY}/facets`, { params: { menu } }),
+  addPaymentActivity: (id, data) => api.post(`${PAY}/${id}/activity`, data),
+
+  // Pro forma invoices
+  proFormas: (params) => api.get(PF, { params }),
+  proForma: (id) => api.get(`${PF}/${id}`),
+  createProForma: (data) => api.post(PF, data),
+  updateProForma: (id, data) => api.put(`${PF}/${id}`, data),
+  deleteProForma: (id) => api.delete(`${PF}/${id}`),
+  approveProForma: (id) => api.post(`${PF}/${id}/approve`),
+  proFormaCreateInvoice: (id) => api.post(`${PF}/${id}/create-invoice`),
+  cancelProForma: (id) => api.post(`${PF}/${id}/cancel`),
+  resetProForma: (id) => api.post(`${PF}/${id}/reset-to-draft`),
+  proFormaFacets: () => api.get(`${PF}/facets`),
+  addProFormaActivity: (id, data) => api.post(`${PF}/${id}/activity`, data),
+
+  // Products — the charge codes behind every invoice line
+  products: (params) => api.get(PROD, { params }),
+  product: (id) => api.get(`${PROD}/${id}`),
+  createProduct: (data) => api.post(PROD, data),
+  updateProduct: (id, data) => api.put(`${PROD}/${id}`, data),
+  deleteProduct: (id) => api.delete(`${PROD}/${id}`),
+  productLookup: (q) => api.get(`${PROD}/lookup`, { params: { q } }),
+};
+
+// ─── TMS ─────────────────────────────────────────────────────────────────────
+// The model is system-written: read endpoints only, by design.
+export const tmsAPI = {
+  getAll: (params) => api.get('/tms/requests', { params }),
+  getById: (id) => api.get(`/tms/requests/${id}`),
+  getFacets: () => api.get('/tms/requests/facets'),
+  resolveDocument: (id) => api.get(`/tms/requests/${id}/document`),
+};
+
+// ─── Access control ──────────────────────────────────────────────────────────
+export const accessAPI = {
+  me: () => api.get('/access/me'),
+  groups: () => api.get('/access/groups'),
+  matrix: () => api.get('/access/matrix'),
+  updateRule: (id, data) => api.put(`/access/rules/${id}`, data),
+  users: () => api.get('/access/users'),
+  userGroups: (userId) => api.get(`/access/users/${userId}/groups`),
+  setUserGroups: (userId, groupIds) => api.put(`/access/users/${userId}/groups`, { groupIds }),
+};
+
+// ─── Freight Booking ─────────────────────────────────────────────────────────
+const FB = '/freightbookings';
+export const freightBookingsAPI = {
+  getAll: (params) => api.get(FB, { params }),
+  getById: (id) => api.get(`${FB}/${id}`),
+  create: (data) => api.post(FB, data),
+  update: (id, data) => api.put(`${FB}/${id}`, data),
+  delete: (id) => api.delete(`${FB}/${id}`),
+  getFacets: () => api.get(`${FB}/facets`),
+  addActivity: (id, data) => api.post(`${FB}/${id}/activity`, data),
+  // AIR
+  directBook: (id) => api.post(`${FB}/${id}/direct-book`),
+  bookNow: (id) => api.post(`${FB}/${id}/book-now`),
+  checkStatus: (id) => api.post(`${FB}/${id}/check-status`),
+  cancel: (id, data) => api.post(`${FB}/${id}/cancel`, data || {}),
+  createHouseShipment: (id) => api.post(`${FB}/${id}/house-shipment`),
+  createMasterShipment: (id) => api.post(`${FB}/${id}/master-shipment`),
+  // SEA
+  book: (id) => api.post(`${FB}/${id}/book`),
+  checkStatusSea: (id) => api.post(`${FB}/${id}/check-status-sea`),
+  updateBooking: (id, data) => api.post(`${FB}/${id}/update-booking`, data || {}),
+  cancelSea: (id, data) => api.post(`${FB}/${id}/cancel-sea`, data || {}),
+  amend: (id, data) => api.post(`${FB}/${id}/amend`, data || {}),
+  // Rates
+  searchFreight: (id) => api.post(`${FB}/${id}/search-freight`),
+  selectFlight: (id, index) => api.post(`${FB}/${id}/select-flight`, { index }),
+};
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+const CAL = '/calendar/events';
+export const calendarAPI = {
+  getRange: (from, to) => api.get(CAL, { params: { from, to } }),
+  getAll: (params) => api.get(CAL, { params }),
+  getById: (id) => api.get(`${CAL}/${id}`),
+  create: (data) => api.post(CAL, data),
+  update: (id, data) => api.put(`${CAL}/${id}`, data),
+  delete: (id) => api.delete(`${CAL}/${id}`),
+  reschedule: (id, data) => api.post(`${CAL}/${id}/reschedule`, data),
+  duplicate: (id) => api.post(`${CAL}/${id}/duplicate`),
+  sendInvitations: (id) => api.post(`${CAL}/${id}/invitations`),
+  setAttendeeStatus: (id, data) => api.post(`${CAL}/${id}/attendee-status`, data),
+  addActivity: (id, data) => api.post(`${CAL}/${id}/activity`, data),
+  resolveDocument: (id) => api.get(`${CAL}/${id}/document`),
+  getPicklists: () => api.get(`${CAL}/picklists`),
+  getPeople: () => api.get(`${CAL}/people`),
+  searchAttendees: (params) => api.get(`${CAL}/attendees/search`, { params }),
+};
+
 // ─── Departments (Administration) ────────────────────────────────────────────
 export const departmentsAPI = {
   getAll: (params) => api.get('/departments/', { params }),
@@ -463,14 +591,7 @@ export const opportunitiesAPI = {
   delete: (id) => api.delete(`/opportunities/${id}/`),
 };
 
-// ─── Freight Bookings ─────────────────────────────────────────────────────────
-export const freightBookingsAPI = {
-  getAll: (params) => api.get('/freightbookings/', { params }),
-  getById: (id) => api.get(`/freightbookings/${id}/`),
-  create: (data) => api.post('/freightbookings/', data),
-  update: (id, data) => api.put(`/freightbookings/${id}/`, data),
-  delete: (id) => api.delete(`/freightbookings/${id}/`),
-};
+// (freightBookingsAPI lives with the other Freight Booking calls above.)
 
 // ─── Vendor Bills ─────────────────────────────────────────────────────────────
 export const vendorBillsAPI = {

@@ -36,6 +36,17 @@ const ContainerNumber = require('./ContainerNumber');
 const Organization = require('./Organization');
 const RMSTariff = require('./RMSTariff');
 const PurchaseOrder = require('./PurchaseOrder');
+const CalendarEvent = require('./CalendarEvent');
+const AppSetting = require('./AppSetting');
+const TMSRequest = require('./TMSRequest');
+const PermissionGroup = require('./PermissionGroup');
+const ModelAccess = require('./ModelAccess');
+const UserGroup = require('./UserGroup');
+const AccountJournal = require('./AccountJournal');
+const AccountMove = require('./AccountMove');
+const AccountPayment = require('./AccountPayment');
+const ProFormaInvoice = require('./ProFormaInvoice');
+const Product = require('./Product');
 const MasterDataItem = require('./MasterDataItem');
 
 // User <-> Company
@@ -167,13 +178,23 @@ Customer.hasMany(Opportunity, { foreignKey: 'customerId', as: 'opportunities' })
 Opportunity.belongsTo(User, { as: 'assignee', foreignKey: 'assignedTo' });
 Opportunity.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
 
+// Access control: users hold many groups; each group grants model permissions.
+ModelAccess.belongsTo(PermissionGroup, { foreignKey: 'groupId', as: 'group' });
+PermissionGroup.hasMany(ModelAccess, { foreignKey: 'groupId', as: 'accessRules' });
+UserGroup.belongsTo(PermissionGroup, { foreignKey: 'groupId', as: 'group' });
+UserGroup.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.belongsToMany(PermissionGroup, { through: UserGroup, foreignKey: 'userId', otherKey: 'groupId', as: 'permissionGroups' });
+PermissionGroup.belongsToMany(User, { through: UserGroup, foreignKey: 'groupId', otherKey: 'userId', as: 'users' });
+
 // FreightBooking associations
 FreightBooking.belongsTo(FFJob, { foreignKey: 'ffJobId', as: 'ffJob' });
 FFJob.hasMany(FreightBooking, { foreignKey: 'ffJobId', as: 'freightBookings' });
-FreightBooking.belongsTo(Carrier, { foreignKey: 'carrierId', as: 'carrier' });
+// `carrier` and `company` are free-text columns on the booking (the demo stores
+// labels, not ids), so the relational aliases carry a Ref suffix.
+FreightBooking.belongsTo(Carrier, { foreignKey: 'carrierId', as: 'carrierRef' });
 FreightBooking.belongsTo(Customer, { foreignKey: 'customerId', as: 'customer' });
 Customer.hasMany(FreightBooking, { foreignKey: 'customerId', as: 'freightBookings' });
-FreightBooking.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+FreightBooking.belongsTo(Company, { foreignKey: 'companyId', as: 'companyRef' });
 FreightBooking.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
 // Company self-reference & agent
@@ -261,5 +282,16 @@ module.exports = {
   Organization,
   RMSTariff,
   PurchaseOrder,
+  CalendarEvent,
+  AppSetting,
+  TMSRequest,
+  PermissionGroup,
+  ModelAccess,
+  UserGroup,
+  AccountJournal,
+  AccountMove,
+  AccountPayment,
+  ProFormaInvoice,
+  Product,
   MasterDataItem,
 };

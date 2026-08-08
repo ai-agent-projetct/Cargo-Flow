@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Receipt, CreditCard, Briefcase, Wrench,
   Ship, TrendingUp, Anchor, DollarSign, Building, Users,
   Truck, MapPin, BarChart2, Settings, UserCog, Activity,
-  FileCheck, Building2, ShoppingCart,
+  FileCheck, Building2, ShoppingCart, CalendarDays, Shield, Landmark,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
@@ -28,10 +28,17 @@ const adminNavigation = [
   { label: 'Operations', href: '/admin/house-shipments', icon: Ship },
   { label: 'Freight Booking', href: '/admin/freight-bookings', icon: Anchor },
 
+  { section: 'TMS' },
+  { label: 'TMS Requests', href: '/admin/tms', icon: Truck },
+
+  { section: 'CALENDAR' },
+  { label: 'Calendar', href: '/admin/calendar', icon: CalendarDays },
+
   { section: 'PROCUREMENT' },
   { label: 'Purchase', href: '/admin/procurement/purchase-orders', icon: ShoppingCart },
 
   { section: 'ACCOUNTING' },
+  { label: 'Accounting', href: '/admin/accounting', icon: Landmark },
   { label: 'Invoices', href: '/admin/invoices', icon: Receipt },
   { label: 'Credit Notes', href: '/admin/credit-notes', icon: CreditCard },
   { label: 'Vendor Bills', href: '/admin/vendor-bills', icon: FileCheck },
@@ -50,6 +57,7 @@ const adminNavigation = [
   { label: 'Ports', href: '/admin/ports', icon: MapPin },
   { label: 'Reports', href: '/admin/reports', icon: BarChart2 },
   { label: 'Users', href: '/admin/users', icon: UserCog },
+  { label: 'Access Rights', href: '/admin/access-rights', icon: Shield },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

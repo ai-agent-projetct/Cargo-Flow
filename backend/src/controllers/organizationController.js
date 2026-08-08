@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
 const {
   Organization, Customer, Opportunity, Quotation, FFJob, MasterShipment,
   Invoice, CreditNote, VendorBill, CFSDelivery,
@@ -83,10 +83,18 @@ const TOP_LEVEL = { parentId: null };
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit, offset } = getPagination(req.query);
-    const { companyType, country, city, transactionType, search, includeChildren } = req.query;
+    const { companyType, country, city, transactionType, search, includeChildren, partyType } = req.query;
 
     const where = includeChildren === 'true' ? {} : { ...TOP_LEVEL };
     if (companyType) where.companyType = companyType;
+    // Accounting's Customers/Vendors screens ask for one party type; it lives in
+    // a JSON array so the match has to go through JSON_CONTAINS.
+    if (partyType) {
+      where[Op.and] = [
+        ...(where[Op.and] || []),
+        literal(`JSON_CONTAINS(partyTypes, ${Organization.sequelize.escape(JSON.stringify(partyType))})`),
+      ];
+    }
     if (country) where.country = country;
     if (city) where.city = city;
     if (transactionType) where.transactionType = transactionType;
