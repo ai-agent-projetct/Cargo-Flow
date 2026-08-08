@@ -39,7 +39,8 @@ const TYPE_BY_MENU = {
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit, offset } = getPagination({ ...req.query, limit: req.query.limit || 80 });
-    const { menu, moveType, search, status, payment, overdue, to_check: toCheck, journal, partner } = req.query;
+    const { menu, moveType, search, status, payment, overdue, to_check: toCheck, journal,
+      partner, partnerId } = req.query;
 
     const where = {};
     const type = moveType || TYPE_BY_MENU[menu] || 'out_invoice';
@@ -49,6 +50,9 @@ exports.getAll = async (req, res, next) => {
     if (payment) where.paymentState = payment.includes(',') ? { [Op.in]: payment.split(',') } : payment;
     if (journal) where.journal = journal;
     if (partner) where.partner = { [Op.like]: `%${partner}%` };
+    // Drilling in from an Organization matches on the foreign key, so a partner
+    // renamed on their record still returns the right documents.
+    if (partnerId) where.partnerId = partnerId;
     if (toCheck === '1') where.toCheck = true;
     // "Late" = due in the past and still owing.
     if (overdue === '1') {

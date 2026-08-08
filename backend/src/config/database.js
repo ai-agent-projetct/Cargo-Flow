@@ -2551,6 +2551,134 @@ const seedOperationsData = async () => {
       console.log(`Seeded ${wave4.PRODUCTS.length} products.`);
     }
 
+    // ── Link accounting partners to Organizations ──
+    // Invoices, payments and pro formas store a partner as the display string
+    // "A-13: Ashish" — customerCode, colon, name. Accounting's Customers and
+    // Vendors menus are the Organization list filtered by party type, so every
+    // partner that has been billed needs a real Organization behind it;
+    // otherwise the menus under-report and a customer card cannot drill through
+    // to its own invoices. Backfill the missing ones, then stamp the foreign
+    // key on the accounting rows so the link works in both directions.
+    {
+      const { AccountMove, AccountPayment, ProFormaInvoice, Organization } = require('../models');
+      const { Op } = require('sequelize');
+
+      const partnerStrings = new Set();
+      const collect = (rows, field) => rows.forEach((r) => {
+        const v = (r[field] || '').trim();
+        // "#Created by: …" is a system annotation, not a partner.
+        if (v && !v.startsWith('#')) partnerStrings.add(v);
+      });
+      collect(await AccountMove.findAll({ attributes: ['partner'], raw: true }), 'partner');
+      collect(await AccountPayment.findAll({ attributes: ['partner'], raw: true }), 'partner');
+      collect(await ProFormaInvoice.findAll({ attributes: ['customer'], raw: true }), 'customer');
+
+      // Split "CODE: Name" into its two halves. Names may themselves contain a
+      // colon (an email, say), so only the first one separates.
+      const parse = (s) => {
+        const i = s.indexOf(':');
+        if (i === -1) return { customerCode: null, name: s.trim() };
+        return { customerCode: s.slice(0, i).trim(), name: s.slice(i + 1).trim() || s.slice(0, i).trim() };
+      };
+
+      const existing = await Organization.findAll({
+        attributes: ['id', 'name', 'customerCode', 'partyTypes'], raw: true,
+      });
+      const byCode = new Map();
+      const byName = new Map();
+      for (const o of existing) {
+        if (o.customerCode) byCode.set(o.customerCode.toLowerCase(), o);
+        byName.set((o.name || '').toLowerCase(), o);
+      }
+
+      const created = [];
+      for (const s of partnerStrings) {
+        const { customerCode, name } = parse(s);
+        const hit = (customerCode && byCode.get(customerCode.toLowerCase()))
+          || byName.get(name.toLowerCase());
+        if (hit) continue;
+        created.push({ customerCode, name, partyTypes: ['Customer'] });
+      }
+
+      if (created.length) {
+        const dubai = await Company.findOne({ where: { code: 'SR-DXB' } });
+        const made = await Organization.bulkCreate(created.map((c) => ({
+          ...c,
+          // An emailish name is a person; anything else reads as a company,
+          // which is what drives the avatar and icon on the kanban card.
+          companyType: /@/.test(c.name) ? 'person' : 'company',
+          // A partner already carrying invoices has cleared onboarding.
+          kycStatus: 'kyc_done',
+          company: dubai?.name || 'SearatesERP (Dubai)',
+          currency: 'AED',
+          isActive: true,
+        })), { individualHooks: false, returning: true });
+        for (const o of made) {
+          if (o.customerCode) byCode.set(o.customerCode.toLowerCase(), o);
+          byName.set((o.name || '').toLowerCase(), o);
+        }
+        console.log(`Backfilled ${made.length} organizations from accounting partners.`);
+      }
+
+      // Resolve a partner display string to an Organization id.
+      const idFor = (s) => {
+        if (!s || s.startsWith('#')) return null;
+        const { customerCode, name } = parse(s.trim());
+        const hit = (customerCode && byCode.get(customerCode.toLowerCase()))
+          || byName.get(name.toLowerCase());
+        return hit ? hit.id : null;
+      };
+
+      // Stamp the key on rows that are still missing it. Grouping by partner
+      // keeps this to one UPDATE per distinct partner rather than per row.
+      const stamp = async (Model, partnerField, fkField) => {
+        const rows = await Model.findAll({
+          attributes: [partnerField], where: { [fkField]: null }, group: [partnerField], raw: true,
+        });
+        let n = 0;
+        for (const r of rows) {
+          const id = idFor(r[partnerField]);
+          if (!id) continue;
+          const [count] = await Model.update(
+            { [fkField]: id },
+            { where: { [partnerField]: r[partnerField], [fkField]: null } },
+          );
+          n += count;
+        }
+        return n;
+      };
+
+      const linked = (await stamp(AccountMove, 'partner', 'partnerId'))
+        + (await stamp(AccountPayment, 'partner', 'partnerId'))
+        + (await stamp(ProFormaInvoice, 'customer', 'customerId'));
+      if (linked) console.log(`Linked ${linked} accounting records to organizations.`);
+
+      // A partner that has been invoiced is a customer, and one that has been
+      // billed is a vendor — mirror that so the two menus filter correctly.
+      const rank = async (Model, fkField, partyType, where = {}) => {
+        const ids = (await Model.findAll({
+          attributes: [fkField], where: { [fkField]: { [Op.ne]: null }, ...where },
+          group: [fkField], raw: true,
+        })).map((r) => r[fkField]);
+        if (!ids.length) return;
+        const orgs = await Organization.findAll({ where: { id: ids } });
+        for (const o of orgs) {
+          const types = Array.isArray(o.partyTypes) ? o.partyTypes : [];
+          if (types.includes(partyType)) continue;
+          await o.update({ partyTypes: [...types, partyType] });
+        }
+      };
+      await rank(AccountMove, 'partnerId', 'Customer', {
+        moveType: { [Op.in]: ['out_invoice', 'out_refund', 'out_debit'] },
+      });
+      await rank(AccountMove, 'partnerId', 'Vendor', {
+        moveType: { [Op.in]: ['in_invoice', 'in_refund', 'in_debit'] },
+      });
+      await rank(AccountPayment, 'partnerId', 'Customer', { paymentType: 'inbound' });
+      await rank(AccountPayment, 'partnerId', 'Vendor', { paymentType: 'outbound' });
+      await rank(ProFormaInvoice, 'customerId', 'Customer');
+    }
+
     // ── TMS requests ──
     const { TMSRequest } = require('../models');
     if ((await TMSRequest.count()) === 0) {

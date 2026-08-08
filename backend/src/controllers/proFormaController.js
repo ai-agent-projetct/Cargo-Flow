@@ -33,11 +33,13 @@ const totalsFor = (lines = []) => lines.reduce((t, l) => {
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit, offset } = getPagination({ ...req.query, limit: req.query.limit || 80 });
-    const { search, status, customer } = req.query;
+    const { search, status, customer, customerId } = req.query;
 
     const where = {};
     if (status) where.state = status.includes(',') ? { [Op.in]: status.split(',') } : status;
     if (customer) where.customer = { [Op.like]: `%${customer}%` };
+    // Drilling in from an Organization matches on the foreign key.
+    if (customerId) where.customerId = customerId;
     if (search) {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },

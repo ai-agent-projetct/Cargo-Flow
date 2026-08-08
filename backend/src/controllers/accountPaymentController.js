@@ -22,7 +22,7 @@ const withMeta = (rec) => ({ ...rec.toJSON(), actions: rec.availableActions() })
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit, offset } = getPagination({ ...req.query, limit: req.query.limit || 80 });
-    const { menu, paymentType, search, status, journal, method, partner } = req.query;
+    const { menu, paymentType, search, status, journal, method, partner, partnerId } = req.query;
 
     const where = {};
     // The Customers menu shows money in, the Vendors menu money out.
@@ -31,6 +31,8 @@ exports.getAll = async (req, res, next) => {
     if (journal) where.journal = journal;
     if (method) where.paymentMethod = method;
     if (partner) where.partner = { [Op.like]: `%${partner}%` };
+    // Drilling in from an Organization matches on the foreign key.
+    if (partnerId) where.partnerId = partnerId;
     if (search) {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
