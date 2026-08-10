@@ -23,7 +23,22 @@ const COLUMNS_BY_MENU = {
   'debit-notes': ['Number', 'Customer', 'Service Jobs', 'House Shipment', 'Master Shipment',
     'Invoice Date', 'Due Date', 'Next Activity', 'Company Currency', 'Tax Excluded', 'Total',
     'Credit Note Currency', 'Total in Currency', 'Payment Status', 'Status'],
+  // The vendor side drops the shipment columns the customer views carry and
+  // labels the partner as Vendor.
+  bills: ['Number', 'Vendor', 'Bill Date', 'Due Date', 'Reference', 'Next Activity',
+    'Company Currency', 'Tax Excluded', 'Total', 'Payment Status', 'Status'],
+  refunds: ['Number', 'Vendor', 'Bill Date', 'Due Date', 'Reference', 'Next Activity',
+    'Company Currency', 'Tax Excluded', 'Total', 'Payment Status', 'Status'],
+  'vendor-debit-notes': ['Number', 'Vendor', 'Bill Date', 'Due Date', 'Reference', 'Next Activity',
+    'Company Currency', 'Tax Excluded', 'Total', 'Payment Status', 'Status'],
 };
+
+const VENDOR_MENUS = new Set(['bills', 'refunds', 'vendor-debit-notes']);
+
+// The menu key and the URL segment differ for vendor debit notes: the backend
+// distinguishes them from the customer ones, the URL is already namespaced by
+// /vendors and doesn't need to.
+const SEGMENT_BY_MENU = { 'vendor-debit-notes': 'debit-notes' };
 
 const TITLE_BY_MENU = {
   invoices: 'Invoices', 'credit-notes': 'Credit Notes', 'debit-notes': 'Debit Notes',
@@ -56,6 +71,11 @@ const MoveList = ({ menu = 'invoices' }) => {
 
   const columns = COLUMNS_BY_MENU[menu] || COLUMNS_BY_MENU.invoices;
   const showNumber = columns[0] === 'Number';
+  // Vendor menus live under /vendors and drop the shipment + foreign-currency
+  // columns, so both the row layout and the detail link differ.
+  const vendorSide = VENDOR_MENUS.has(menu);
+  const section = vendorSide ? 'vendors' : 'customers';
+  const segment = SEGMENT_BY_MENU[menu] || menu;
 
   // The dashboard's counter links arrive as query params.
   const preset = useMemo(() => ({
@@ -112,43 +132,8 @@ const MoveList = ({ menu = 'invoices' }) => {
   const Row = (r) => {
     const overdue = isOverdue(r.invoiceDateDue, r.paymentState);
     const draft = r.state === 'draft';
-    return (
-      <tr key={r.id} onClick={() => navigate(`/admin/accounting/customers/${menu}/${r.id}`)}
-        className="hover:bg-gray-50 cursor-pointer">
-        <td className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" className="rounded border-gray-300" />
-        </td>
-        {showNumber && (
-          <td className="px-2 py-1.5 whitespace-nowrap">
-            <span className="inline-flex items-center gap-1">
-              <ExternalLink className="w-3 h-3 text-blue-700" />
-              <span className={`font-semibold text-xs ${draft ? 'text-blue-700' : 'text-gray-900'}`}>{r.name}</span>
-            </span>
-          </td>
-        )}
-        <td className={`px-2 py-1.5 text-xs max-w-[10rem] truncate ${draft ? 'text-blue-700' : 'text-gray-800'}`}
-          title={r.partner}>{r.partner}</td>
-        <td className="px-2 py-1.5">{(r.serviceJobRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-        <td className="px-2 py-1.5">{(r.houseShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-        <td className="px-2 py-1.5">{(r.masterShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-700'}`}>
-          {fmtDate(r.invoiceDate)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${overdue ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-          {fmtDate(r.invoiceDateDue)}
-        </td>
-        <td className="px-2 py-1.5 text-gray-300 text-center">○</td>
-        <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.companyCurrency}</td>
-        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
-          {money(r.amountUntaxed, r.companyCurrency)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap font-semibold ${draft ? 'text-blue-700' : 'text-gray-900'}`}>
-          {money(r.amountTotal, r.companyCurrency)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.currency}</td>
-        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
-          {money(r.amountTotalCurrency, r.currency)}
-        </td>
+    const statusCells = (
+      <>
         <td className="px-2 py-1.5">
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${PAYMENT_PILL[r.paymentState]}`}>
             {PAYMENT[r.paymentState]}
@@ -159,6 +144,76 @@ const MoveList = ({ menu = 'invoices' }) => {
             {STATE[r.state]}
           </span>
         </td>
+      </>
+    );
+    const numberCell = showNumber && (
+      <td className="px-2 py-1.5 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1">
+          <ExternalLink className="w-3 h-3 text-blue-700" />
+          <span className={`font-semibold text-xs ${draft ? 'text-blue-700' : 'text-gray-900'}`}>{r.name}</span>
+        </span>
+      </td>
+    );
+    const partnerCell = (
+      <td className={`px-2 py-1.5 text-xs max-w-[10rem] truncate ${draft ? 'text-blue-700' : 'text-gray-800'}`}
+        title={r.partner}>{r.partner}</td>
+    );
+    const dateCells = (
+      <>
+        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-700'}`}>
+          {fmtDate(r.invoiceDate)}
+        </td>
+        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${overdue ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
+          {fmtDate(r.invoiceDateDue)}
+        </td>
+      </>
+    );
+    const amountCells = (
+      <>
+        <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.companyCurrency}</td>
+        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
+          {money(r.amountUntaxed, r.companyCurrency)}
+        </td>
+        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap font-semibold ${draft ? 'text-blue-700' : 'text-gray-900'}`}>
+          {money(r.amountTotal, r.companyCurrency)}
+        </td>
+      </>
+    );
+
+    return (
+      <tr key={r.id} onClick={() => navigate(`/admin/accounting/${section}/${segment}/${r.id}`)}
+        className="hover:bg-gray-50 cursor-pointer">
+        <td className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" className="rounded border-gray-300" />
+        </td>
+        {numberCell}
+        {partnerCell}
+        {vendorSide ? (
+          <>
+            {dateCells}
+            {/* Vendor documents show the supplier's own reference instead of
+                the shipment chips the customer views carry. */}
+            <td className="px-2 py-1.5 text-xs text-gray-700 max-w-[12rem] truncate" title={r.ref || ''}>
+              {r.ref || ''}
+            </td>
+            <td className="px-2 py-1.5 text-gray-300 text-center">○</td>
+            {amountCells}
+          </>
+        ) : (
+          <>
+            <td className="px-2 py-1.5">{(r.serviceJobRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
+            <td className="px-2 py-1.5">{(r.houseShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
+            <td className="px-2 py-1.5">{(r.masterShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
+            {dateCells}
+            <td className="px-2 py-1.5 text-gray-300 text-center">○</td>
+            {amountCells}
+            <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.currency}</td>
+            <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
+              {money(r.amountTotalCurrency, r.currency)}
+            </td>
+          </>
+        )}
+        {statusCells}
       </tr>
     );
   };
@@ -321,14 +376,17 @@ const MoveList = ({ menu = 'invoices' }) => {
               {rows.length > 0 && (
                 <tfoot className="bg-gray-50 border-t border-gray-200">
                   <tr>
-                    <td colSpan={showNumber ? 10 : 9} />
+                    {/* Totals sit under Tax Excluded and Total, so the leading
+                        span is however many columns precede them (+1 for the
+                        checkbox), and the trailing span is whatever follows. */}
+                    <td colSpan={columns.indexOf('Tax Excluded') + 1} />
                     <td className="px-2 py-2 text-xs text-right font-semibold text-gray-900 whitespace-nowrap">
                       {Number(meta.totals?.untaxed || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-2 py-2 text-xs text-right font-semibold text-gray-900 whitespace-nowrap">
                       {Number(meta.totals?.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
-                    <td colSpan={4} />
+                    <td colSpan={columns.length - columns.indexOf('Total') - 1} />
                   </tr>
                 </tfoot>
               )}

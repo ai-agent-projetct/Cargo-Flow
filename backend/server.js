@@ -17,10 +17,22 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 const app = express();
 const httpServer = http.createServer(app);
 
+// The dev server asks for port 3000 but falls back to any free port when
+// something else already holds it, so in development accept any localhost
+// origin. Production stays pinned to CLIENT_URL.
+const CLIENT_ORIGIN = process.env.CLIENT_URL || 'http://localhost:3000';
+const corsOrigin = (origin, callback) => {
+  if (!origin || origin === CLIENT_ORIGIN) return callback(null, true);
+  if (process.env.NODE_ENV !== 'production' && /^https?:\/\/localhost:\d+$/.test(origin)) {
+    return callback(null, true);
+  }
+  return callback(new Error('Not allowed by CORS'));
+};
+
 // ─── Socket.IO Setup ─────────────────────────────────────────────────────────
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -57,7 +69,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: corsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

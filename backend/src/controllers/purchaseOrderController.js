@@ -241,10 +241,21 @@ exports.createVendorBill = async (req, res, next) => {
       createdBy: req.user?.id || null,
     });
 
+    // Mirror it into accounting so the bill appears under
+    // Accounting > Vendors > Bills, not only inside Procurement.
+    const { AccountMove } = require('../models');
+    const { moveAttributesFor } = require('../services/vendorBillBridge');
+    const move = await AccountMove.create(moveAttributesFor(bill, {
+      createdBy: req.user?.id || null,
+      activityLog: [logEntry(actorName(req), `Vendor bill created from ${record.poNumber}`)],
+    }));
+
     await record.update({
       billCount: (record.billCount || 0) + 1,
       activityLog: pushLog(record, logEntry(actorName(req), `Vendor bill ${bill.billNumber} created`)),
     });
+
+    bill.setDataValue('accountMoveId', move.id);
 
     return successResponse(res, { purchaseOrder: withActions(record), bill }, 'Vendor bill created', 201);
   } catch (error) {

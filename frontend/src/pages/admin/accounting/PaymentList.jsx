@@ -25,13 +25,17 @@ const PSTATE_PILL = {
   cancel: 'bg-gray-200 text-gray-500',
 };
 
-const COLUMNS = ['Date', 'Number', 'Journal', 'Payment Method', 'Customer',
-  'Invoice Number', 'Amount', 'Status'];
+// The vendor side of this screen pays bills rather than collecting against
+// invoices, so the partner and document columns change label.
+const columnsFor = (vendor) => ['Date', 'Number', 'Journal', 'Payment Method',
+  vendor ? 'Vendor' : 'Customer', vendor ? 'Bill Number' : 'Invoice Number',
+  'Amount', 'Status'];
 
 const PaymentList = ({ menu = 'payments' }) => {
   const navigate = useNavigate();
   const { guard, can } = usePermissions();
   const vendor = menu === 'vendor-payments';
+  const COLUMNS = columnsFor(vendor);
   const base = vendor ? '/admin/accounting/vendors/payments' : '/admin/accounting/customers/payments';
 
   const [rows, setRows] = useState([]);

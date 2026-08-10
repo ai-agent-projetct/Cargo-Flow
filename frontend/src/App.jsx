@@ -271,6 +271,18 @@ function App() {
                 {/* The partner screens are the Organization records, filtered */}
                 <Route path="customers/list" element={<PartnerList kind="customer" />} />
 
+                {/* Vendors > Bills / Refunds / Debit Notes are account.move rows
+                    with the in_* move types, so they reuse the same screens. */}
+                <Route path="vendors/bills" element={<MoveList menu="bills" />} />
+                <Route path="vendors/bills/create" element={<MoveDetail menu="bills" />} />
+                <Route path="vendors/bills/:id" element={<MoveDetail menu="bills" />} />
+                <Route path="vendors/refunds" element={<MoveList menu="refunds" />} />
+                <Route path="vendors/refunds/create" element={<MoveDetail menu="refunds" />} />
+                <Route path="vendors/refunds/:id" element={<MoveDetail menu="refunds" />} />
+                <Route path="vendors/debit-notes" element={<MoveList menu="vendor-debit-notes" />} />
+                <Route path="vendors/debit-notes/create" element={<MoveDetail menu="vendor-debit-notes" />} />
+                <Route path="vendors/debit-notes/:id" element={<MoveDetail menu="vendor-debit-notes" />} />
+
                 {/* Vendors > Payments / Products / Vendors share the same screens */}
                 <Route path="vendors/payments" element={<PaymentList menu="vendor-payments" />} />
                 <Route path="vendors/payments/create" element={<PaymentDetail menu="vendor-payments" />} />

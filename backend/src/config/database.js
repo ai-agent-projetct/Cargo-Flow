@@ -655,6 +655,7 @@ const ensureOperationsTables = async () => {
         serviceJobRefs: { type: DataTypes.JSON, allowNull: true },
         lines: { type: DataTypes.JSON, allowNull: true },
         journalItems: { type: DataTypes.JSON, allowNull: true },
+        sourceBillId: { type: DataTypes.UUID, allowNull: true },
         reversedEntryId: { type: DataTypes.UUID, allowNull: true },
         reversedEntryName: { type: DataTypes.STRING(60), allowNull: true },
         narration: { type: DataTypes.TEXT, allowNull: true },
@@ -670,6 +671,14 @@ const ensureOperationsTables = async () => {
       await qi.addIndex('account_moves', ['moveType'], { name: 'account_moves_type' });
       await qi.addIndex('account_moves', ['state'], { name: 'account_moves_state' });
       console.log('Created account_moves table.');
+    } else {
+      // sourceBillId arrived with the Vendors wave; existing installs need the
+      // column added rather than the table recreated.
+      const moveCols = await qi.describeTable('account_moves');
+      if (!moveCols.sourceBillId) {
+        await sequelize.query('ALTER TABLE account_moves ADD COLUMN sourceBillId CHAR(36) BINARY NULL');
+        console.log('Added account_moves.sourceBillId.');
+      }
     }
 
     if (!tables.includes('account_journals')) {
@@ -2549,6 +2558,113 @@ const seedOperationsData = async () => {
         })
       ), { individualHooks: false });
       console.log(`Seeded ${wave4.PRODUCTS.length} products.`);
+    }
+
+    // ── Accounting wave 5: vendor bills, refunds, debit notes, payments ──
+    {
+      const { AccountMove, AccountPayment, VendorBill } = require('../models');
+      const { BILLS, REFUNDS, VENDOR_DEBIT_NOTES, VENDOR_PAYMENTS } = require('./seedData/vendorMoves');
+      const { moveAttributesFor } = require('../services/vendorBillBridge');
+      const { Op } = require('sequelize');
+
+      // Count only rows this block owns. Mirrored procurement bills are also
+      // in_invoice, so counting the move type alone would skip the seed once a
+      // single purchase order had been billed.
+      const seededVendorMoves = await AccountMove.count({
+        where: { moveType: { [Op.in]: ['in_invoice', 'in_refund', 'in_debit'] }, sourceBillId: null },
+      });
+      if (seededVendorMoves === 0) {
+        const mkVendor = (rows, moveType, journal) => rows.map(
+          ([vendor, ref, date, due, untaxed, total, paymentState, state, reversedOf]) => {
+            const tax = Math.round((Number(total) - Number(untaxed)) * 100) / 100;
+            const rate = untaxed ? Math.round((tax / Number(untaxed)) * 100) : 0;
+            return {
+              name: state === 'draft' ? '/' : ref,
+              moveType, state, paymentState,
+              partner: vendor, partnerAddress: vendor,
+              invoiceDate: date, invoiceDateDue: due,
+              journal,
+              currency: 'AED', companyCurrency: 'AED',
+              amountUntaxed: untaxed, amountTax: tax,
+              amountTotal: total, amountTotalCurrency: total,
+              amountResidual: paymentState === 'paid' ? 0 : total,
+              lines: [{
+                kind: 'line',
+                product: '[MCAG] Main Carriage',
+                label: 'Main Carriage',
+                account: '501001 Cost of Services',
+                quantity: 1, price: untaxed, discount: 0, exRate: 1,
+                chargeCurrency: 'AED',
+                taxes: rate ? `VAT ${rate}%` : 'VAT 0%',
+                taxRate: rate, vatAmount: tax, subtotal: untaxed,
+              }],
+              // A refund reverses the original bill; a debit note just adds
+              // charges against it, so only the refund reads as a reversal.
+              reversedEntryName: moveType === 'in_refund' ? reversedOf || null : null,
+              ref: reversedOf
+                ? `${moveType === 'in_refund' ? 'Reversal of' : 'Against'}: ${reversedOf}`
+                : null,
+              company: 'SearatesERP (Dubai)',
+              followerCount: 1,
+              activityLog: [{
+                at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
+                kind: 'log', body: 'Vendor document created', changes: [],
+              }],
+            };
+          }
+        );
+
+        await AccountMove.bulkCreate([
+          ...mkVendor(BILLS, 'in_invoice', 'Vendor Bills'),
+          ...mkVendor(REFUNDS, 'in_refund', 'Vendor Bills'),
+          ...mkVendor(VENDOR_DEBIT_NOTES, 'in_debit', 'Vendor Bills'),
+        ], { individualHooks: false });
+        console.log(`Seeded ${BILLS.length + REFUNDS.length + VENDOR_DEBIT_NOTES.length} vendor moves.`);
+      }
+
+      if ((await AccountPayment.count({ where: { paymentType: 'outbound' } })) === 0) {
+        await AccountPayment.bulkCreate(VENDOR_PAYMENTS.map(
+          ([date, name, journal, method, partner, bills, amount, state]) => ({
+            name, paymentType: 'outbound', paymentDate: date,
+            journal, paymentMethod: method, partner,
+            invoiceNumbers: bills, amount, currency: 'AED', state,
+            company: 'SearatesERP (Dubai)', followerCount: 1,
+            activityLog: [{
+              at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
+              kind: 'log', body: 'Payment Created', changes: [],
+            }],
+          })
+        ), { individualHooks: false });
+        console.log(`Seeded ${VENDOR_PAYMENTS.length} vendor payments.`);
+      }
+
+      // Bills raised from a purchase order live in vendor_bills. Mirror any that
+      // have no accounting document yet, so Procurement's "Create Vendor Bill"
+      // shows up under Accounting > Vendors > Bills instead of vanishing.
+      const bills = await VendorBill.findAll();
+      if (bills.length) {
+        const mirrored = new Set(
+          (await AccountMove.findAll({
+            attributes: ['sourceBillId'],
+            where: { sourceBillId: { [Op.ne]: null } },
+            raw: true,
+          })).map((r) => r.sourceBillId)
+        );
+        const missing = bills.filter((b) => !mirrored.has(b.id));
+        if (missing.length) {
+          await AccountMove.bulkCreate(
+            missing.map((b) => moveAttributesFor(b, {
+              activityLog: [{
+                at: new Date(b.createdAt || Date.now()).toISOString(),
+                author: 'Anix Logistics PVT LTD', kind: 'log',
+                body: 'Vendor bill created from purchase order', changes: [],
+              }],
+            })),
+            { individualHooks: false }
+          );
+          console.log(`Mirrored ${missing.length} procurement vendor bills into accounting.`);
+        }
+      }
     }
 
     // ── Link accounting partners to Organizations ──

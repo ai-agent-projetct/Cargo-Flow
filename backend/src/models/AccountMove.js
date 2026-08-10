@@ -65,6 +65,10 @@ const AccountMove = sequelize.define('AccountMove', {
   journalItems: { type: DataTypes.JSON, defaultValue: [] },
 
   // Credit/debit notes point back at what they reverse.
+  // Set when this move mirrors a Procurement VendorBill, so the Bills list and
+  // the purchase order point at the same document.
+  sourceBillId: { type: DataTypes.UUID, allowNull: true },
+
   reversedEntryId: { type: DataTypes.UUID, allowNull: true },
   reversedEntryName: { type: DataTypes.STRING(60), allowNull: true },
 
