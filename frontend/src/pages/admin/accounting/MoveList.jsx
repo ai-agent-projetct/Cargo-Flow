@@ -51,7 +51,7 @@ const Chip = ({ children }) => (
   </span>
 );
 
-const MoveList = ({ menu = 'invoices' }) => {
+const MoveList = ({ menu = 'invoices', title, moveType }) => {
   const navigate = useNavigate();
   const { guard, can } = usePermissions();
   const [params] = useSearchParams();
@@ -89,6 +89,8 @@ const MoveList = ({ menu = 'invoices' }) => {
   const load = useCallback(async () => {
     setLoading(true);
     const q = { menu, page, limit: PAGE_SIZE, search: search || undefined, ...preset };
+    // A Journals screen overrides the menu's default move type.
+    if (moveType) q.moveType = moveType;
     filters.forEach((f) => { const [k, v] = f.split('='); q[k] = q[k] ? `${q[k]},${v}` : v; });
     const res = await guard(() => accountingAPI.list(q));
     if (res) {
@@ -96,7 +98,7 @@ const MoveList = ({ menu = 'invoices' }) => {
       setMeta(res.data.pagination || { total: 0, totals: { untaxed: 0, total: 0 } });
     } else { setRows([]); }
     setLoading(false);
-  }, [menu, page, search, filters, preset, guard]);
+  }, [menu, page, search, filters, preset, moveType, guard]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, filters, menu]);
@@ -221,7 +223,7 @@ const MoveList = ({ menu = 'invoices' }) => {
   return (
     <div className="px-6 pb-6">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-        <h2 className="text-base font-semibold text-gray-900">{TITLE_BY_MENU[menu] || 'Invoices'}</h2>
+        <h2 className="text-base font-semibold text-gray-900">{title || TITLE_BY_MENU[menu] || 'Invoices'}</h2>
         <div className="relative">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..."
             className="w-[26rem] pl-3 pr-9 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />

@@ -66,6 +66,12 @@ import ProFormaDetail from './pages/admin/accounting/ProFormaDetail';
 import ProductList from './pages/admin/accounting/ProductList';
 import ProductDetail from './pages/admin/accounting/ProductDetail';
 import PartnerList from './pages/admin/accounting/PartnerList';
+import ReportView from './pages/admin/accounting/ReportView';
+import ConfigList from './pages/admin/accounting/ConfigList';
+import AssetList from './pages/admin/accounting/AssetList';
+import AccountingSettings from './pages/admin/accounting/AccountingSettings';
+import { Reconciliation, LockDates, ImportStatement } from './pages/admin/accounting/AccountingActions';
+import { REPORT_ROUTES, CONFIG_ROUTES } from './pages/admin/accounting/routeTables';
 import AdminVendorBills from './pages/admin/VendorBills';
 import AdminCreditNotes from './pages/admin/CreditNotes';
 import AdminOrganizations from './pages/admin/Organizations';
@@ -291,6 +297,44 @@ function App() {
                 <Route path="vendors/products/create" element={<ProductDetail menu="vendor-products" />} />
                 <Route path="vendors/products/:id" element={<ProductDetail menu="vendor-products" />} />
                 <Route path="vendors/list" element={<PartnerList kind="vendor" />} />
+
+                {/* ── Accounting menu ── */}
+                <Route path="entries" element={<MoveList menu="entries" />} />
+                <Route path="entries/create" element={<MoveDetail menu="entries" />} />
+                <Route path="entries/:id" element={<MoveDetail menu="entries" />} />
+
+                {/* A journal's documents span several move types. */}
+                <Route path="journals/sales" element={<MoveList menu="invoices" title="Sales" moveType="out_invoice,out_refund,out_debit" />} />
+                <Route path="journals/purchases" element={<MoveList menu="bills" title="Purchases" moveType="in_invoice,in_refund,in_debit" />} />
+                <Route path="journals/bank-cash" element={<PaymentList menu="payments" title="Bank and Cash" />} />
+                <Route path="journals/misc" element={<MoveList menu="entries" title="Miscellaneous" />} />
+
+                <Route path="ledgers/general" element={<ReportView reportId="general-ledger" title="General Ledger" />} />
+                <Route path="ledgers/partner" element={<ReportView reportId="partner-ledger" title="Partner Ledger" />} />
+                <Route path="ledgers/vat-201" element={<ReportView reportId="vat-201" title="VAT 201 Return Report" />} />
+
+                <Route path="management/assets" element={<AssetList menu="assets" title="Assets" />} />
+                <Route path="management/deferred-revenue" element={<AssetList menu="deferred-revenue" title="Deferred Revenue" />} />
+                <Route path="management/deferred-expenses" element={<AssetList menu="deferred-expenses" title="Deferred Expenses" />} />
+                <Route path="management/wip" element={<ReportView reportId="accounting-operations" title="WIP Automation" />} />
+
+                {/* PDC is the same payments list narrowed to cheque payments. */}
+                <Route path="pdc" element={<PaymentList menu="payments" title="PDC Payments" method="PDC Payment" />} />
+
+                <Route path="actions/reconciliation" element={<Reconciliation />} />
+                <Route path="actions/lock-dates" element={<LockDates />} />
+                <Route path="actions/import-statement" element={<ImportStatement />} />
+
+                {/* ── Reporting ── */}
+                {REPORT_ROUTES.map(({ path, id, title }) => (
+                  <Route key={path} path={path} element={<ReportView reportId={id} title={title} />} />
+                ))}
+
+                {/* ── Configuration ── */}
+                <Route path="config/settings" element={<AccountingSettings />} />
+                {CONFIG_ROUTES.map(({ path, id, title }) => (
+                  <Route key={path} path={path} element={<ConfigList configId={id} title={title} />} />
+                ))}
 
                 <Route path="*" element={<AccountingStub />} />
               </Route>

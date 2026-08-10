@@ -43,8 +43,10 @@ exports.getAll = async (req, res, next) => {
       partner, partnerId } = req.query;
 
     const where = {};
+    // The Journals screens show every document a journal produced, which spans
+    // several move types, so accept a comma-separated list too.
     const type = moveType || TYPE_BY_MENU[menu] || 'out_invoice';
-    where.moveType = type;
+    where.moveType = String(type).includes(',') ? { [Op.in]: String(type).split(',') } : type;
 
     if (status) where.state = status.includes(',') ? { [Op.in]: status.split(',') } : status;
     if (payment) where.paymentState = payment.includes(',') ? { [Op.in]: payment.split(',') } : payment;

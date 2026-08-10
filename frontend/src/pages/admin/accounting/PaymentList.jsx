@@ -31,7 +31,7 @@ const columnsFor = (vendor) => ['Date', 'Number', 'Journal', 'Payment Method',
   vendor ? 'Vendor' : 'Customer', vendor ? 'Bill Number' : 'Invoice Number',
   'Amount', 'Status'];
 
-const PaymentList = ({ menu = 'payments' }) => {
+const PaymentList = ({ menu = 'payments', title, method }) => {
   const navigate = useNavigate();
   const { guard, can } = usePermissions();
   const vendor = menu === 'vendor-payments';
@@ -56,6 +56,8 @@ const PaymentList = ({ menu = 'payments' }) => {
   const load = useCallback(async () => {
     setLoading(true);
     const q = { menu, page, limit: PAGE_SIZE, search: search || undefined };
+    // The PDC screen is this list narrowed to cheque payments.
+    if (method) q.method = method;
     filters.forEach((f) => { const [k, v] = f.split('='); q[k] = q[k] ? `${q[k]},${v}` : v; });
     const res = await guard(() => accountingAPI.payments(q));
     if (res) {
@@ -63,7 +65,7 @@ const PaymentList = ({ menu = 'payments' }) => {
       setMeta(res.data.pagination || { total: 0, totals: { amount: 0 } });
     } else { setRows([]); }
     setLoading(false);
-  }, [menu, page, search, filters, guard]);
+  }, [menu, page, search, filters, method, guard]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, filters, menu]);
@@ -142,7 +144,7 @@ const PaymentList = ({ menu = 'payments' }) => {
   return (
     <div className="px-6 pb-6">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-        <h2 className="text-base font-semibold text-gray-900">Payments</h2>
+        <h2 className="text-base font-semibold text-gray-900">{title || 'Payments'}</h2>
         <div className="flex items-center gap-2">
           {scope && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 border border-blue-200 text-xs text-blue-800">

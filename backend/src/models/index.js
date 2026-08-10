@@ -47,6 +47,8 @@ const AccountMove = require('./AccountMove');
 const AccountPayment = require('./AccountPayment');
 const ProFormaInvoice = require('./ProFormaInvoice');
 const Product = require('./Product');
+const AccountAsset = require('./AccountAsset');
+const ConfigItem = require('./ConfigItem');
 const MasterDataItem = require('./MasterDataItem');
 
 // User <-> Company
@@ -293,5 +295,7 @@ module.exports = {
   AccountPayment,
   ProFormaInvoice,
   Product,
+  AccountAsset,
+  ConfigItem,
   MasterDataItem,
 };

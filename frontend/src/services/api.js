@@ -220,6 +220,24 @@ const PAY = '/accounting/payments';
 const PF = '/accounting/pro-formas';
 const PROD = '/accounting/products';
 export const accountingAPI = {
+  // Reports — the backend returns column definitions with the rows
+  runReport: (id, params) => api.get(`/accounting/reports/${id}`, { params }),
+  reportList: () => api.get('/accounting/reports'),
+
+  // Configuration — one generic endpoint behind every Configuration leaf
+  getConfig: (id, params) => api.get(`/accounting/config/${id}`, { params }),
+  createConfig: (id, data) => api.post(`/accounting/config/${id}`, data),
+  updateConfig: (id, recordId, data) => api.put(`/accounting/config/${id}/${recordId}`, data),
+  deleteConfig: (id, recordId) => api.delete(`/accounting/config/${id}/${recordId}`),
+
+  // Assets / deferred revenue / deferred expenses
+  assets: (params) => api.get('/accounting/assets', { params }),
+  asset: (id) => api.get(`/accounting/assets/${id}`),
+  createAsset: (data, menu) => api.post('/accounting/assets', data, { params: { menu } }),
+  updateAsset: (id, data) => api.put(`/accounting/assets/${id}`, data),
+  deleteAsset: (id) => api.delete(`/accounting/assets/${id}`),
+  assetAction: (id, action) => api.post(`/accounting/assets/${id}/${action}`),
+
   // Dashboard
   dashboard: () => api.get('/accounting/journals/dashboard'),
   journals: (params) => api.get('/accounting/journals', { params }),

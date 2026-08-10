@@ -538,6 +538,60 @@ const ensureOperationsTables = async () => {
       console.log('Created freight_bookings table.');
     }
 
+    if (!tables.includes('account_assets')) {
+      await qi.createTable('account_assets', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        name: { type: DataTypes.STRING(200), allowNull: false },
+        assetType: { type: DataTypes.ENUM('purchase', 'sale', 'expense'), defaultValue: 'purchase' },
+        partner: { type: DataTypes.STRING(250), allowNull: true },
+        partnerId: { type: DataTypes.UUID, allowNull: true },
+        original: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        depreciated: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        bookValue: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0 },
+        currency: { type: DataTypes.STRING(10), defaultValue: 'AED' },
+        acquisitionDate: { type: DataTypes.DATEONLY, allowNull: true },
+        firstDepreciationDate: { type: DataTypes.DATEONLY, allowNull: true },
+        duration: { type: DataTypes.INTEGER, defaultValue: 12 },
+        periodicity: { type: DataTypes.ENUM('months', 'years'), defaultValue: 'months' },
+        method: { type: DataTypes.ENUM('linear', 'degressive'), defaultValue: 'linear' },
+        account: { type: DataTypes.STRING(120), allowNull: true },
+        depreciationAccount: { type: DataTypes.STRING(120), allowNull: true },
+        expenseAccount: { type: DataTypes.STRING(120), allowNull: true },
+        journal: { type: DataTypes.STRING(120), allowNull: true },
+        state: { type: DataTypes.ENUM('draft', 'running', 'paused', 'close', 'cancel'), defaultValue: 'draft' },
+        depreciationLines: { type: DataTypes.JSON, allowNull: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        activityLog: { type: DataTypes.JSON, allowNull: true },
+        followerCount: { type: DataTypes.INTEGER, defaultValue: 1 },
+        createdBy: { type: DataTypes.UUID, allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      console.log('Created account_assets table.');
+    }
+
+    if (!tables.includes('config_items')) {
+      await qi.createTable('config_items', {
+        id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
+        category: { type: DataTypes.STRING(60), allowNull: false },
+        name: { type: DataTypes.STRING(200), allowNull: true },
+        code: { type: DataTypes.STRING(60), allowNull: true },
+        value: { type: DataTypes.STRING(200), allowNull: true },
+        note: { type: DataTypes.TEXT, allowNull: true },
+        country: { type: DataTypes.STRING(120), allowNull: true },
+        days: { type: DataTypes.DECIMAL(14, 4), allowNull: true },
+        dateFrom: { type: DataTypes.DATEONLY, allowNull: true },
+        dateTo: { type: DataTypes.DATEONLY, allowNull: true },
+        sequence: { type: DataTypes.INTEGER, defaultValue: 10 },
+        active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        company: { type: DataTypes.STRING(120), allowNull: true },
+        createdAt: { type: DataTypes.DATE, allowNull: false },
+        updatedAt: { type: DataTypes.DATE, allowNull: false },
+      });
+      await qi.addIndex('config_items', ['category'], { name: 'config_items_category' });
+      console.log('Created config_items table.');
+    }
+
     if (!tables.includes('account_payments')) {
       await qi.createTable('account_payments', {
         id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
@@ -2558,6 +2612,64 @@ const seedOperationsData = async () => {
         })
       ), { individualHooks: false });
       console.log(`Seeded ${wave4.PRODUCTS.length} products.`);
+    }
+
+    // ── Accounting wave 6/8: assets and configuration lookup lists ──
+    {
+      const { AccountAsset, ConfigItem } = require('../models');
+
+      if ((await AccountAsset.count()) === 0) {
+        // [name, type, partner, original, acquired, duration, account]
+        const ASSETS = [
+          ['Office Fit-out Jebel Ali', 'purchase', 'GM-8: Goodrich Maritme', 120000, '2025-01-15', 60],
+          ['Forklift FL-220', 'purchase', 'TL-3: Trident Logistics', 85000, '2025-04-01', 48],
+          ['Warehouse Racking', 'purchase', 'ASSL-1: Aitken Spence Shipping Ltd', 240000, '2024-09-10', 120],
+          ['Delivery Van DXB-4471', 'purchase', 'AV-2: Ankit Vijay', 96000, '2025-07-20', 60],
+          ['Annual Insurance Premium', 'expense', 'ALPL-1: Anix Logistics PVT LTD', 36000, '2026-01-01', 12],
+          ['Port Licence Fee 2026', 'expense', 'UPS-2: ULTRA POMPE SRL', 18000, '2026-01-01', 12],
+          ['Prepaid Rent Q1-Q4', 'expense', 'B-26: Brandom', 48000, '2026-01-01', 12],
+          ['Annual Freight Contract - Acme', 'sale', 'A-13: Ashish', 144000, '2026-01-01', 12],
+          ['Retainer - Customer Portal Access', 'sale', 'CPA-1: Customer Portal Access', 60000, '2025-10-01', 24],
+        ];
+        const rows = [];
+        for (const [name, assetType, partner, original, acquired, duration] of ASSETS) {
+          const asset = AccountAsset.build({
+            name, assetType, partner, original, bookValue: original,
+            acquisitionDate: acquired, firstDepreciationDate: acquired,
+            duration, periodicity: 'months', method: 'linear',
+            account: assetType === 'purchase' ? '101010 Fixed Assets' : '501001 Cost of Services',
+            journal: 'Miscellaneous Operations',
+            state: 'running',
+            company: 'SearatesERP (Dubai)',
+          });
+          const lines = asset.buildSchedule();
+          // Recognise everything scheduled on or before today.
+          const today = new Date().toISOString().slice(0, 10);
+          const done = lines.filter((l) => l.date <= today);
+          const depreciated = done.reduce((a, l) => a + Number(l.depreciation), 0);
+          rows.push({
+            ...asset.get({ plain: true }),
+            depreciationLines: lines.map((l) => ({ ...l, posted: l.date <= today })),
+            depreciated: Math.round(depreciated * 100) / 100,
+            bookValue: Math.round((original - depreciated) * 100) / 100,
+          });
+        }
+        await AccountAsset.bulkCreate(rows, { individualHooks: false });
+        console.log(`Seeded ${rows.length} account assets.`);
+      }
+
+      // Each configuration leaf ships its own starting rows; top up by category
+      // so adding a new leaf later does not require wiping the table.
+      const { CONFIGS } = require('../services/configRegistry');
+      for (const cfg of CONFIGS) {
+        if (cfg.backing !== 'config_items' || !cfg.seed?.length) continue;
+        const existing = await ConfigItem.count({ where: { category: cfg.category } });
+        if (existing) continue;
+        await ConfigItem.bulkCreate(
+          cfg.seed.map((row, i) => ({ ...row, category: cfg.category, sequence: (i + 1) * 10 })),
+          { individualHooks: false }
+        );
+      }
     }
 
     // ── Accounting wave 5: vendor bills, refunds, debit notes, payments ──
