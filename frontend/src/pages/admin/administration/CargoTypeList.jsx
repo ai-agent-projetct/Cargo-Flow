@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, ChevronLeft, ChevronDown, ChevronRight, X, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CARGO_TYPES, TRANSPORT_MODES } from './freightMastersData';
+import MasterListToolbar from './MasterListToolbar';
 
 // "Administration > Freight Masters > Cargo Type" list, mirroring CargoFlo
 // ERP's "Cargo Type" screen: grouped by Transport Mode (collapsible group
@@ -40,34 +41,12 @@ const CargoTypeList = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
-          <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
-            <Download className="w-4 h-4" />
-          </button>
-
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-2 py-1.5 w-72">
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded">
-                <span className="w-3 h-3 inline-flex items-center justify-center bg-primary-600 text-white rounded-sm text-[8px]">≡</span>
-                Transport Mode
-                <X className="w-3 h-3 cursor-pointer" />
-              </span>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="flex-1 text-sm outline-none"
-              />
-              <Search className="w-4 h-4 text-slate-400" />
-            </div>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
-            <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-          </div>
-        </div>
+        <MasterListToolbar
+          rows={filtered}
+          filename="cargo-type"
+          search={search}
+          onSearch={setSearch}
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

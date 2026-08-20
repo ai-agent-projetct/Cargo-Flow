@@ -3,8 +3,9 @@ const router = express.Router();
 const c = require('../controllers/accountAssetController');
 const { authenticate: auth } = require('../middleware/auth');
 const { attachPermissions } = require('../middleware/permissions');
+const { attachCompanyScope } = require('../middleware/companyScope');
 
-router.use(auth, attachPermissions);
+router.use(auth, attachPermissions, attachCompanyScope);
 
 router.get('/', c.getAll);
 router.post('/', c.create);

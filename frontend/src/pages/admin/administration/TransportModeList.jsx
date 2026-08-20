@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, ChevronLeft, ArrowUpDown } from 'lucide-react';
-import SearchBar from '../../../common/SearchBar';
+import { ArrowUpDown } from 'lucide-react';
 import { TRANSPORT_MODES } from './freightMastersData';
+import MasterListToolbar from './MasterListToolbar';
 
 // "Administration > Freight Masters > Transport Modes" list, mirroring
 // CargoFlo ERP's "Transport Mode" screen (drag handle, Code, Name, Mode Type,
@@ -24,21 +24,12 @@ const TransportModeList = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
-          <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
-            <Download className="w-4 h-4" />
-          </button>
-
-          <div className="flex items-center gap-2">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
-            <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-          </div>
-        </div>
+        <MasterListToolbar
+          rows={filtered}
+          filename="transport-mode"
+          search={search}
+          onSearch={setSearch}
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

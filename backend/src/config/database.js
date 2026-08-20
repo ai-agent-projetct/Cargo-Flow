@@ -2187,6 +2187,14 @@ const seedOperationsData = async () => {
     const renamed = await rebrandData(sequelize);
     if (renamed) console.log(`Rebranded ${renamed} stored values to CargoFlo.`);
 
+    // Transactional rows stored the operating company as a name only, so
+    // nothing could filter by it. Give them the key and resolve it.
+    const { backfillCompanyIds } = require('./companyBackfill');
+    const qiScope = sequelize.getQueryInterface();
+    const companyFix = await backfillCompanyIds(sequelize, qiScope, DataTypes);
+    if (companyFix.added) console.log(`Added companyId to ${companyFix.added} table(s).`);
+    if (companyFix.linked) console.log(`Linked ${companyFix.linked} rows to their operating company.`);
+
     // One-time fixup: drop the earlier placeholder rows (they use the generated
     // "CFS-DLV-"/"SHR-" numbering rather than the demo's real reference format)
     // so the real CargoFlo records below can take their place.

@@ -1,6 +1,7 @@
 const { Op, fn, col } = require('sequelize');
 const { ProFormaInvoice, AccountMove, AccountJournal } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
+const { companyWhere, defaultCompanyId } = require('../middleware/companyScope');
 
 const actorName = (req) => req.user?.name || req.user?.email || 'Administrator';
 const logEntry = (author, body, changes = []) => ({
@@ -37,6 +38,7 @@ exports.getAll = async (req, res, next) => {
 
     const where = {};
     if (status) where.state = status.includes(',') ? { [Op.in]: status.split(',') } : status;
+    Object.assign(where, companyWhere(req));
     if (customer) where.customer = { [Op.like]: `%${customer}%` };
     // Drilling in from an Organization matches on the foreign key.
     if (customerId) where.customerId = customerId;
@@ -112,7 +114,7 @@ exports.create = async (req, res, next) => {
       state: 'to_approve',
       taxes: body.taxes ?? Math.round(t.taxes * 100) / 100,
       total: body.total ?? Math.round(t.total * 100) / 100,
-      company: 'CargoFlo Logistics Ltd',
+      companyId: defaultCompanyId(req),
       createdBy: req.user?.id || null,
       activityLog: [logEntry(actorName(req), 'Pro Forma Invoice Created')],
     });

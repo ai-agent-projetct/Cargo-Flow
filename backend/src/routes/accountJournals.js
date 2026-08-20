@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const c = require('../controllers/accountJournalController');
 const { authenticate: auth } = require('../middleware/auth');
+const { attachCompanyScope } = require('../middleware/companyScope');
+
+router.use(auth, attachCompanyScope);
 
 router.get('/dashboard', auth, c.dashboard);
 router.get('/', auth, c.getAll);

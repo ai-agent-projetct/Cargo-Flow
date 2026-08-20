@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Download, ChevronLeft } from 'lucide-react';
-import SearchBar from '../../../common/SearchBar';
+import { X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import MasterListToolbar from './MasterListToolbar';
 
 // Generic "Display Name / Model" list used for the Freight Masters JSON
 // specification screens (Product JSON Specifications, FIATA eBL Json
@@ -40,27 +40,12 @@ const JsonSpecList = ({ data }) => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
-          <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
-            <Download className="w-4 h-4" />
-          </button>
-
-          <div className="flex items-center gap-2">
-            {data.filterChip && (
-              <span className="flex items-center gap-1.5 bg-primary-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-md">
-                {data.filterChip}
-                <X className="w-3 h-3 cursor-pointer" />
-              </span>
-            )}
-            <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
-            <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-          </div>
-        </div>
+        <MasterListToolbar
+          rows={filtered}
+          filename="json-spec"
+          search={search}
+          onSearch={setSearch}
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

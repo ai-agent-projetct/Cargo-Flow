@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, SlidersHorizontal, MoreVertical } from 'lucide-react';
-import SearchBar from '../../../common/SearchBar';
+import { MoreVertical } from 'lucide-react';
 import { MEASUREMENT_BASES } from './measurementBasisData';
 import { TRANSPORT_MODES } from './freightMastersData';
+import MasterListToolbar from './MasterListToolbar';
 
 // "Administration > Freight Masters > Measurement Basis" list, mirroring
 // CargoFlo ERP's "Measurement Basis" screen: Name / Transport Mode (tags) /
@@ -38,19 +38,12 @@ const MeasurementBasisList = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
-          <div />
-          <div className="flex items-center gap-2">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
-            <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><SlidersHorizontal className="w-4 h-4" /></button>
-          </div>
-        </div>
+        <MasterListToolbar
+          rows={filtered}
+          filename="measurement-basis"
+          search={search}
+          onSearch={setSearch}
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

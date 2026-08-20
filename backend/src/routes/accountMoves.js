@@ -3,8 +3,9 @@ const router = express.Router();
 const c = require('../controllers/accountMoveController');
 const { authenticate: auth } = require('../middleware/auth');
 const { requireAccess, attachPermissions } = require('../middleware/permissions');
+const { attachCompanyScope } = require('../middleware/companyScope');
 
-router.use(auth, attachPermissions);
+router.use(auth, attachPermissions, attachCompanyScope);
 
 router.get('/facets', c.getFacets);
 router.get('/sources', c.allowedSources);

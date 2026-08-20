@@ -1,6 +1,7 @@
 const { Op, fn, col } = require('sequelize');
 const { AccountPayment, AccountJournal, AccountMove } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
+const { companyWhere, defaultCompanyId } = require('../middleware/companyScope');
 
 const actorName = (req) => req.user?.name || req.user?.email || 'Administrator';
 const logEntry = (author, body, changes = []) => ({
@@ -28,6 +29,7 @@ exports.getAll = async (req, res, next) => {
     // The Customers menu shows money in, the Vendors menu money out.
     where.paymentType = paymentType || (menu === 'vendor-payments' ? 'outbound' : 'inbound');
     if (status) where.state = status.includes(',') ? { [Op.in]: status.split(',') } : status;
+    Object.assign(where, companyWhere(req));
     if (journal) where.journal = journal;
     if (method) where.paymentMethod = method;
     if (partner) where.partner = { [Op.like]: `%${partner}%` };
@@ -109,7 +111,7 @@ exports.create = async (req, res, next) => {
       paymentType: body.paymentType || (req.query.menu === 'vendor-payments' ? 'outbound' : 'inbound'),
       journal: journalName,
       journalId: journal?.id || null,
-      company: 'CargoFlo Logistics Ltd',
+      companyId: defaultCompanyId(req),
       createdBy: req.user?.id || null,
       activityLog: [logEntry(actorName(req), 'Payment Created')],
     });

@@ -3,6 +3,7 @@ const {
   AccountMove, AccountJournal, Customer, FFJob, MasterShipment, ServiceJob, ProFormaInvoice,
 } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
+const { companyWhere, defaultCompanyId } = require('../middleware/companyScope');
 
 const actorName = (req) =>
   req.user?.name || req.user?.email || 'Administrator';
@@ -43,6 +44,8 @@ exports.getAll = async (req, res, next) => {
       partner, partnerId } = req.query;
 
     const where = {};
+    // Only the operating companies the user is currently looking at.
+    Object.assign(where, companyWhere(req));
     // The Journals screens show every document a journal produced, which spans
     // several move types, so accept a comma-separated list too.
     const type = moveType || TYPE_BY_MENU[menu] || 'out_invoice';
@@ -152,7 +155,7 @@ exports.create = async (req, res, next) => {
       state: 'draft',
       journal: journalName,
       journalId: journal?.id || null,
-      company: 'CargoFlo Logistics Ltd',
+      companyId: defaultCompanyId(req),
       createdBy: req.user?.id || null,
       activityLog: [logEntry(actorName(req),
         menuType === 'out_refund' ? 'Credit Note Created' : 'Invoice Created')],

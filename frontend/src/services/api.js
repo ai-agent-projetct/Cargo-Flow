@@ -18,6 +18,16 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // The header's company switcher writes the selection here. Send it so the
+    // server can narrow results to those companies — without this the switcher
+    // changes the label and nothing else. The server intersects it with what
+    // the user is entitled to, so it can only ever narrow.
+    try {
+      const active = JSON.parse(localStorage.getItem('active_company_ids') || '[]');
+      if (Array.isArray(active) && active.length) {
+        config.headers['X-Active-Companies'] = active.join(',');
+      }
+    } catch { /* a corrupt selection just means no company filter */ }
     return config;
   },
   (error) => Promise.reject(error)

@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { AccountAsset } = require('../models');
 const { successResponse, errorResponse, getPagination } = require('../utils/helpers');
+const { companyWhere, defaultCompanyId } = require('../middleware/companyScope');
 
 // Assets, Deferred Revenue and Deferred Expenses are one model split by type.
 const TYPE_BY_MENU = {
@@ -28,6 +29,7 @@ exports.getAll = async (req, res, next) => {
     const { menu, search, status } = req.query;
 
     const where = { assetType: TYPE_BY_MENU[menu] || 'purchase' };
+    Object.assign(where, companyWhere(req));
     if (status) where.state = status.includes(',') ? { [Op.in]: status.split(',') } : status;
     if (search) {
       where[Op.or] = [
@@ -70,6 +72,7 @@ exports.create = async (req, res, next) => {
     body.assetType = TYPE_BY_MENU[req.query.menu] || body.assetType || 'purchase';
     body.bookValue = body.original;
     body.createdBy = req.user?.id || null;
+    body.companyId = defaultCompanyId(req);
 
     const rec = await AccountAsset.create(body);
     // The schedule follows from the value and duration, so build it on save.

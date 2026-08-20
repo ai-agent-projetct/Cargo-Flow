@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, SlidersHorizontal, Download, ChevronDown } from 'lucide-react';
-import SearchBar from '../../../common/SearchBar';
+import { Download } from 'lucide-react';
 import { HAZ_SUB_CLASSES } from './hazSubClassData';
 import HazSubClassExportDataModal from './HazSubClassExportDataModal';
+import MasterListToolbar from './MasterListToolbar';
 
 // "Administration > Freight Masters > HAZ Sub Class" list, mirroring CargoFlo
 // ERP's "HAZ Sub Class" screen: Name / HAZ Class columns, a Download-only
@@ -58,43 +58,14 @@ const HazSubClassList = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <button className="p-1.5 text-slate-400 hover:text-slate-600 border border-slate-200 rounded-lg">
-              <Download className="w-4 h-4" />
-            </button>
-            {selected.size > 0 && (
-              <>
-                <span className="px-2 py-1 text-xs font-medium bg-primary-50 text-primary-600 rounded-lg">
-                  {selected.size} selected
-                </span>
-                <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={() => setShowActionMenu((prev) => !prev)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50"
-                  >
-                    Action <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-                  {showActionMenu && (
-                    <div className="absolute top-full mt-1 w-28 bg-white rounded-lg shadow-lg border border-slate-100 py-1 z-30">
-                      <button onClick={() => handleAction('Export')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Export</button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
-            <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><SlidersHorizontal className="w-4 h-4" /></button>
-          </div>
-        </div>
+        <MasterListToolbar
+          rows={filtered}
+          filename="haz-sub-class"
+          search={search}
+          onSearch={setSearch}
+          selectedCount={selected.size}
+          onAction={handleAction}
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
