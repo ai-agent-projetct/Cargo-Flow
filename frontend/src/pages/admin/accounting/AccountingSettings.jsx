@@ -55,18 +55,18 @@ const AccountingSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
+  // The settings API speaks nested objects — { category: { key: value } } —
+  // for both reads and writes.
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await guard(() => api.get('/settings', { params: { category: 'accounting' } }));
-    const rows = res?.data?.data || [];
-    const byKey = Object.fromEntries(
-      (Array.isArray(rows) ? rows : []).map((r) => [r.key, r.value])
-    );
+    const res = await guard(() => api.get('/settings'));
+    // The endpoint answers { settings: { category: { key: value } }, secrets: [] }.
+    const stored = res?.data?.data?.settings?.accounting || {};
     // Fall back to each field's documented default when nothing is stored yet.
     setValues(Object.fromEntries(ALL.map(([key, , type, def]) => {
-      const stored = byKey[key];
-      if (stored === undefined) return [key, def];
-      return [key, type === 'boolean' ? stored === 'true' || stored === true : stored];
+      const v = stored[key];
+      if (v === undefined || v === null || v === '') return [key, def];
+      return [key, type === 'boolean' ? (v === true || v === 'true') : v];
     })));
     setLoading(false);
   }, [guard]);
@@ -74,11 +74,11 @@ const AccountingSettings = () => {
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
-    const payload = ALL.map(([key]) => ({
-      category: 'accounting', key, value: String(values[key] ?? ''),
-    }));
-    const res = await guard(() => api.put('/settings/bulk', { settings: payload }));
-    if (res) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    const accounting = Object.fromEntries(
+      ALL.map(([key, , type]) => [key, type === 'boolean' ? !!values[key] : String(values[key] ?? '')])
+    );
+    const res = await guard(() => api.put('/settings', { settings: { accounting } }));
+    if (res) { setSaved(true); setTimeout(() => setSaved(false), 2500); load(); }
   };
 
   if (loading) return <PageLoader />;
