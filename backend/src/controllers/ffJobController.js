@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const { portalWhere } = require('../middleware/portalScope');
 const { FFJob, Quotation, Customer, User, Company, Event } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
 
@@ -47,7 +48,8 @@ exports.getAll = async (req, res, next) => {
       sortOrder = 'DESC',
     } = req.query;
 
-    const where = {};
+    // A portal login only ever sees its own customer's records.
+    const where = { ...portalWhere(req) };
     if (status) where.status = status;
     if (transportMode) where.transportMode = transportMode;
     if (direction) where.direction = direction;

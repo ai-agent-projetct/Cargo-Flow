@@ -11,7 +11,7 @@ const TABLES = [
   'account_assets',
 ];
 
-const backfillCompanyIds = async (sequelize, qi, DataTypes) => {
+const backfillCompanyIds = async (sequelize, qi) => {
   let added = 0;
   let linked = 0;
 

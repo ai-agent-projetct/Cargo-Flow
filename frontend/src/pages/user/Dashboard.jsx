@@ -88,7 +88,7 @@ const UserDashboard = () => {
       <div className="bg-gradient-to-r from-blue-800 to-blue-600 rounded-xl p-5 text-white flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">
-            Welcome back, {user?.first_name || 'there'}!
+            Welcome back, {(user?.name || '').split(' ')[0] || 'there'}!
           </h2>
           <p className="text-blue-200 text-sm mt-0.5">
             Here's an overview of your cargo operations.

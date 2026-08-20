@@ -13,11 +13,10 @@ const UserProfile = () => {
 
   const profileForm = useForm({
     defaultValues: {
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
+      name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      company: user?.company || '',
+      company: user?.company?.name || user?.companyName || '',
     },
   });
 
@@ -63,13 +62,15 @@ const UserProfile = () => {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
-            {getInitials(`${user?.first_name || ''} ${user?.last_name || ''}`)}
+            {getInitials(user?.name || user?.email || '')}
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900">{user?.first_name} {user?.last_name}</p>
+            {/* The account carries a single `name`; there is no first/last split. */}
+            <p className="text-lg font-bold text-slate-900">{user?.name || '—'}</p>
             <p className="text-sm text-slate-500">{user?.email}</p>
             <span className="mt-1 inline-block text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-              {user?.company || 'Customer'}
+              {/* company is the associated record, not a string — render its name. */}
+              {user?.company?.name || user?.companyName || 'Customer'}
             </span>
           </div>
         </div>
@@ -92,15 +93,9 @@ const UserProfile = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-900 mb-5">Personal Information</h3>
           <form onSubmit={profileForm.handleSubmit(handleProfileSave)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name</label>
-                <input type="text" className="input-field w-full" {...profileForm.register('first_name')} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Last Name</label>
-                <input type="text" className="input-field w-full" {...profileForm.register('last_name')} />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+              <input type="text" className="input-field w-full" {...profileForm.register('name')} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
@@ -112,7 +107,8 @@ const UserProfile = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Company Name</label>
-              <input type="text" className="input-field w-full" placeholder="Your company" {...profileForm.register('company')} />
+              <input type="text" disabled title="Set by your administrator"
+                className="input-field w-full bg-slate-50 text-slate-500" {...profileForm.register('company')} />
             </div>
             <div className="flex justify-end pt-2">
               <button type="submit" disabled={loading} className="flex items-center gap-2 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">

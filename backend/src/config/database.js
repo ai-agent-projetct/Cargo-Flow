@@ -2191,7 +2191,30 @@ const seedOperationsData = async () => {
     // nothing could filter by it. Give them the key and resolve it.
     const { backfillCompanyIds } = require('./companyBackfill');
     const qiScope = sequelize.getQueryInterface();
-    const companyFix = await backfillCompanyIds(sequelize, qiScope, DataTypes);
+    const companyFix = await backfillCompanyIds(sequelize, qiScope);
+
+    // Portal logins need a customer to be scoped to. Add the link, then point
+    // the portal accounts at customers that actually carry history so the
+    // portal shows real interlinked records rather than an empty shell.
+    const userCols = await qiScope.describeTable('users');
+    if (!userCols.customerId) {
+      await sequelize.query('ALTER TABLE users ADD COLUMN customerId CHAR(36) BINARY NULL');
+      console.log('Added users.customerId.');
+    }
+    const PORTAL_LINKS = [
+      ['john@cargoflo.com', 'Global Trade Corp'],
+      ['maxismy@gmail.com', 'Customer Portal Access'],
+    ];
+    for (const [email, customerName] of PORTAL_LINKS) {
+      const [done] = await sequelize.query(
+        `UPDATE users u
+           JOIN customers c ON (c.companyName = :name OR c.contactName = :name)
+            SET u.customerId = c.id
+          WHERE u.email = :email AND u.customerId IS NULL`,
+        { replacements: { name: customerName, email } }
+      );
+      if (done?.affectedRows) console.log(`Linked ${email} to customer ${customerName}.`);
+    }
     if (companyFix.added) console.log(`Added companyId to ${companyFix.added} table(s).`);
     if (companyFix.linked) console.log(`Linked ${companyFix.linked} rows to their operating company.`);
 
@@ -3319,7 +3342,14 @@ const seedOperationsData = async () => {
       console.log(`Seeded ${SHIPMENT_SHARINGS.length} shipment sharing records.`);
     }
   } catch (error) {
-    console.error('Error seeding operations data:', error.message);
+    // This one catch covers every seed and migration step, so a single throw
+    // silently skips all the later ones. Logging only the message has hidden
+    // real failures more than once — a ReferenceError here looks identical to
+    // "nothing to do" in a log full of SQL. Make it impossible to miss.
+    console.error('\n=============================================');
+    console.error('SEED/MIGRATION ABORTED — later steps did NOT run');
+    console.error(error.stack || error.message);
+    console.error('=============================================\n');
   }
 };
 

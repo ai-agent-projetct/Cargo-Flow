@@ -12,8 +12,7 @@ const AdminSettings = () => {
 
   const profileForm = useForm({
     defaultValues: {
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
+      name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
       company: user?.company || 'CargoFlo Logistics',
@@ -79,24 +78,18 @@ const AdminSettings = () => {
           <h3 className="font-semibold text-slate-900 mb-5">Profile Information</h3>
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
             <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {user?.first_name?.[0] || 'A'}
+              {(user?.name || 'A')[0]}
             </div>
             <div>
-              <p className="font-semibold text-slate-900">{user?.first_name} {user?.last_name}</p>
+              <p className="font-semibold text-slate-900">{user?.name || '—'}</p>
               <p className="text-sm text-slate-500">{user?.email}</p>
               <button className="mt-1 text-xs text-primary-600 hover:text-primary-800">Change photo</button>
             </div>
           </div>
           <form onSubmit={profileForm.handleSubmit(handleProfileSave)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name</label>
-                <input type="text" className="input-field w-full" {...profileForm.register('first_name')} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Last Name</label>
-                <input type="text" className="input-field w-full" {...profileForm.register('last_name')} />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+              <input type="text" className="input-field w-full" {...profileForm.register('name')} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>

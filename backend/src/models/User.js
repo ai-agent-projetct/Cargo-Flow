@@ -72,6 +72,12 @@ const User = sequelize.define('User', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  // Links a portal login to the customer whose records it may see. Staff
+  // accounts leave this null and are not narrowed.
+  customerId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   creditLimitSetup: {
     type: DataTypes.JSON,
     allowNull: false,

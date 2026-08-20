@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { Invoice, InvoiceItem, Customer, Shipment, User } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
 const { sendInvoiceEmail } = require('../utils/emailService');
+const { portalWhere } = require('../middleware/portalScope');
 
 const getIncludes = (withItems = false) => {
   const includes = [
@@ -29,7 +30,8 @@ exports.getAll = async (req, res, next) => {
     const { page, limit, offset } = getPagination(req.query);
     const { status, type, customerId, search } = req.query;
 
-    const where = {};
+    // A portal login only ever sees its own customer's records.
+    const where = { ...portalWhere(req) };
     if (status) where.status = status;
     if (type) where.type = type;
     if (customerId) where.customerId = customerId;

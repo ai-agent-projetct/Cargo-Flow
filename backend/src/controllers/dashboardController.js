@@ -373,13 +373,14 @@ exports.getAdminStats = async (req, res, next) => {
 exports.getUserStats = async (req, res, next) => {
   try {
     const { Customer: CustomerModel } = require('../models');
-    const customer = await CustomerModel.findOne({ where: { userId: req.user.id } });
+    // The link lives on the account (users.customerId); Customer has no userId,
+    // so the old lookup threw on every portal dashboard load.
+    const customerId = req.user?.customerId;
+    const customer = customerId ? await CustomerModel.findByPk(customerId) : null;
 
     if (!customer) {
       return successResponse(res, {}, 'No customer linked to this user');
     }
-
-    const customerId = customer.id;
     const now = new Date();
 
     const [
