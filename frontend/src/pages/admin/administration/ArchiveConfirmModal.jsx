@@ -2,7 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 
 // Shared "Confirmation" dialog shown when a user clicks Action > Archive on a
-// detail record, mirroring SeaRates ERP's confirmation popup.
+// detail record, mirroring CargoFlo ERP's confirmation popup.
 const ArchiveConfirmModal = ({ open, onConfirm, onCancel }) => {
   if (!open) return null;
 

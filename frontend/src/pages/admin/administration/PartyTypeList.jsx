@@ -4,7 +4,7 @@ import { Download, ChevronLeft } from 'lucide-react';
 import SearchBar from '../../../common/SearchBar';
 import { PARTY_TYPES, PARTY_TYPE_COLORS } from './partyTypeData';
 
-// "Administration > Freight Masters > Party Type" list, mirroring SeaRates
+// "Administration > Freight Masters > Party Type" list, mirroring CargoFlo
 // ERP's "Party Type" screen: a "Create" button, Name / Code / Is Vendor /
 // Color columns. Clicking a row opens its detail page.
 const PartyTypeList = () => {

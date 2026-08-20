@@ -31,7 +31,7 @@ const EXPORT_FIELD_TREE = [
 ];
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');
@@ -89,7 +89,7 @@ const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter })
   );
 };
 
-// "Export Data" dialog for the "Package Info" list, mirroring SeaRates ERP /
+// "Export Data" dialog for the "Package Info" list, mirroring CargoFlo ERP /
 // Odoo's export-data popup: an "Available fields" tree on the left (Category,
 // Code, Created by/on, Display Name, External ID, ID, Kind, Last Modified on,
 // Last Updated by/on, Material, Material Code, Type - "Created by"/"Last

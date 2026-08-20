@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { TRANSPORT_MODES } from './freightMastersData';
 
 // "Administration > Freight Masters > Transport Modes" list, mirroring
-// SeaRates ERP's "Transport Mode" screen (drag handle, Code, Name, Mode Type,
+// CargoFlo ERP's "Transport Mode" screen (drag handle, Code, Name, Mode Type,
 // Active toggle columns). Clicking a row opens its own detail page.
 const TransportModeList = () => {
   const navigate = useNavigate();

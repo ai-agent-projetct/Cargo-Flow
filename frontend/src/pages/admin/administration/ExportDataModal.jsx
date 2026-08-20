@@ -3,7 +3,7 @@ import { X, ChevronRight, Plus, Trash2, GripVertical } from 'lucide-react';
 import { EXPORT_FIELD_TREE } from './groupsData';
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');

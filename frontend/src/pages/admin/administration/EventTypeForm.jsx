@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { EVENT_TYPES } from './eventTypeData';
 
 // "Administration > Freight Masters > Event Type / New" (and "/Edit") form,
-// mirroring SeaRates ERP's Event Type create/edit screen: Event Name, Event
+// mirroring CargoFlo ERP's Event Type create/edit screen: Event Name, Event
 // Code, Public Visible toggle, Summary textarea, and Save/Discard buttons.
 const EventTypeForm = () => {
   const navigate = useNavigate();

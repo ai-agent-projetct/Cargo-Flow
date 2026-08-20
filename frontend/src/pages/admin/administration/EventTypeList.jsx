@@ -4,7 +4,7 @@ import { Download, ChevronLeft } from 'lucide-react';
 import SearchBar from '../../../common/SearchBar';
 import { EVENT_TYPES } from './eventTypeData';
 
-// "Administration > Freight Masters > Event Type" list, mirroring SeaRates
+// "Administration > Freight Masters > Event Type" list, mirroring CargoFlo
 // ERP's "Event Type" screen: a "Create" button, Event Code / Event Name
 // columns. Clicking a row opens its detail page.
 const EventTypeList = () => {

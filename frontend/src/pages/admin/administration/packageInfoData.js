@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Package Info" - dedicated list,
-// mirroring SeaRates ERP's "Package Info" screen: Code / Kind / Type /
+// mirroring CargoFlo ERP's "Package Info" screen: Code / Kind / Type /
 // Material Code / Material / Category columns, Download-only toolbar (no
 // Create), a checkbox + "Action > Export" menu, and an "Export Data" dialog.
 export const PACKAGE_INFOS = [

@@ -8,7 +8,7 @@ import { STATUS_FLOW, STATUS_LABELS } from './houseShipment/constants';
 
 const GROUP_ORDER = [...STATUS_FLOW, 'cancelled'];
 
-// Derive transportMode / direction / cargoType from a SeaRates-style job number
+// Derive transportMode / direction / cargoType from a CargoFlo-style job number
 // e.g. SEA-E-FCL-H-N-2026-01851 -> { transportMode: 'SEA', direction: 'EXPORT', cargoType: 'FCL' }
 const parseJobNumber = (jobNumber) => {
   const parts = jobNumber.split('-');
@@ -21,7 +21,7 @@ const parseJobNumber = (jobNumber) => {
   return { transportMode, direction, cargoType };
 };
 
-// Real House Shipment records sourced from the SeaRates Tech demo export, grouped by status
+// Real House Shipment records sourced from the CargoFlo Tech demo export, grouped by status
 const RAW_JOBS = [
   // Created
   { jobNumber: 'SEA-E-FCL-H-N-2026-01851', hblNumber: '', status: 'created', origin: 'Ubungo', destination: 'Escàs', customer: 'Atharva', shipper: 'accounts-us@ila-global.net', consignee: 'admin-us@ila-global.net', revenue: { estReceivable: 110, actReceivable: 0, estPayable: 0, actPayable: 0, estMargin: 110, actMargin: 0 } },

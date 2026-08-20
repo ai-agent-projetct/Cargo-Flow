@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { FREIGHT_PRODUCTS } from './freightMastersData';
 
 // "Administration > Freight Masters > Freight Product" list, mirroring
-// SeaRates ERP's "Freight Product" screen (Freight Product / Model / Product
+// CargoFlo ERP's "Freight Product" screen (Freight Product / Model / Product
 // Type columns). Rows are static reference/configuration records - clicking a
 // row opens the matching-rule detail view.
 const FreightProductList = () => {

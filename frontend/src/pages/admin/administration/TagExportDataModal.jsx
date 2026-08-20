@@ -27,7 +27,7 @@ const EXPORT_FIELD_TREE = [
 ];
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');
@@ -86,7 +86,7 @@ const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter })
 };
 
 // "Export Data" dialog for the "Freight Shipment Tag" list, mirroring
-// SeaRates ERP / Odoo's export-data popup: an "Available fields" tree on the
+// CargoFlo ERP / Odoo's export-data popup: an "Available fields" tree on the
 // left (Active, Created by/on, Display Name, External ID, ID, Last Modified
 // on, Last Updated by/on, Name - each "by" field expandable into the standard
 // user-related sub-fields), a "Fields to export" list on the right with

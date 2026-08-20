@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > HAZ Class" - dedicated list, mirroring
-// SeaRates ERP's "HAZ Class" screen: Name / Description columns, Download-only
+// CargoFlo ERP's "HAZ Class" screen: Name / Description columns, Download-only
 // toolbar (no Create), a checkbox + "Action > Export" menu, and an "Export
 // Data" dialog.
 export const HAZ_CLASSES = [

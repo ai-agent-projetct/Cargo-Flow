@@ -1,5 +1,5 @@
 // Static option lists for the Sell Tariff / Buy Tariff create-edit form,
-// mirroring the dropdowns shown in SeaRates ERP's "Buy Tariff / New" screen.
+// mirroring the dropdowns shown in CargoFlo ERP's "Buy Tariff / New" screen.
 
 export const TARIFF_JOB_TYPES = [
   { value: 'shipment', label: 'Shipment' },

@@ -1,5 +1,5 @@
 // Shared Access Rights field definitions used by both Department and User
-// detail pages, matching SeaRates ERP "Access Rights" matrix layout.
+// detail pages, matching CargoFlo ERP "Access Rights" matrix layout.
 
 export const ROLE_OPTIONS = [
   '',

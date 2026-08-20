@@ -238,8 +238,37 @@ const AccountingDashboard = () => {
     }
   };
 
-  const shown = cards.filter((c) =>
-    !search.trim() || c.name.toLowerCase().includes(search.toLowerCase()));
+  // Toolbar state. The card grid is entirely client-side, so these filter the
+  // rendered set rather than refetching.
+  const [bar, setBar] = useState(null);
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [grouped, setGrouped] = useState(false);
+  const [favOnly, setFavOnly] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const barRef = useRef(null);
+
+  useEffect(() => {
+    const away = (e) => { if (barRef.current && !barRef.current.contains(e.target)) setBar(null); };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, []);
+
+  const shown = cards.filter((c) => {
+    if (search.trim() && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (typeFilter !== 'all' && c.type !== typeFilter) return false;
+    // "Favourites" here means the journals pinned to the top of the dashboard,
+    // which is what `favourite` records on the journal.
+    if (favOnly && !c.favourite) return false;
+    return true;
+  });
+
+  // Group By stacks the cards under their journal type.
+  const groupedCards = grouped
+    ? Object.entries(shown.reduce((acc, c) => {
+      (acc[c.type] = acc[c.type] || []).push(c);
+      return acc;
+    }, {})).sort(([a], [b]) => a.localeCompare(b))
+    : null;
 
   return (
     <div className="px-6 pb-6">
@@ -262,20 +291,61 @@ const AccountingDashboard = () => {
           </div>
 
           <div className="flex items-center gap-3 text-sm text-gray-600">
-            <button className="flex items-center gap-1 hover:text-gray-900"><Filter className="w-3.5 h-3.5" /> Filters</button>
-            <button className="flex items-center gap-1 hover:text-gray-900"><Layers className="w-3.5 h-3.5" /> Group By</button>
-            <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-            <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            <div className="relative" ref={barRef}>
+              <button onClick={() => setBar(bar === 'filters' ? null : 'filters')}
+                className="flex items-center gap-1 hover:text-gray-900"><Filter className="w-3.5 h-3.5" /> Filters</button>
+              {bar === 'filters' && (
+                <div className="absolute right-0 top-7 z-20 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                  {['all', 'sale', 'purchase', 'bank', 'cash', 'general'].map((t) => (
+                    <button key={t} onClick={() => { setTypeFilter(t); setBar(null); }}
+                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 capitalize ${typeFilter === t ? 'text-blue-700 font-medium' : ''}`}>
+                      {t === 'all' ? 'All journals' : t}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => setGrouped((g) => !g)}
+              className={`flex items-center gap-1 hover:text-gray-900 ${grouped ? 'text-blue-700' : ''}`}>
+              <Layers className="w-3.5 h-3.5" /> Group By
+            </button>
+            <button onClick={() => setFavOnly((f) => !f)}
+              className={`flex items-center gap-1 hover:text-gray-900 ${favOnly ? 'text-amber-500' : ''}`}>
+              <Star className={`w-3.5 h-3.5 ${favOnly ? 'fill-amber-400' : ''}`} /> Favorites
+            </button>
+            <button onClick={() => setCompact((c) => !c)} title="Toggle compact cards"
+              className={`hover:text-gray-900 ${compact ? 'text-blue-700' : ''}`}>
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
             <span className="text-xs">1-{shown.length} / {shown.length}</span>
-            <button className="p-1 opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-            <button className="p-1 opacity-30"><ChevronRight className="w-4 h-4" /></button>
+            <button disabled className="p-1 opacity-30" title="All journals fit on one page">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button disabled className="p-1 opacity-30" title="All journals fit on one page">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {loading ? <PageLoader /> : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {shown.map((j) => <JournalCard key={j.id} j={j} onAction={onAction} />)}
+      {loading ? <PageLoader /> : shown.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
+          No journals match the current filters
+        </div>
+      ) : groupedCards ? (
+        groupedCards.map(([type, list]) => (
+          <div key={type} className="mb-5">
+            <div className="text-xs font-semibold text-gray-600 uppercase mb-2">
+              {type} ({list.length})
+            </div>
+            <div className={`grid grid-cols-1 gap-4 ${compact ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+              {list.map((j) => <JournalCard key={j.id} j={j} onAction={onAction} compact={compact} />)}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className={`grid grid-cols-1 gap-4 ${compact ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+          {shown.map((j) => <JournalCard key={j.id} j={j} onAction={onAction} compact={compact} />)}
         </div>
       )}
     </div>

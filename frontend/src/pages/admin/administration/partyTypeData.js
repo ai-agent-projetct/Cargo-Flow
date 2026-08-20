@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Party Type" - dedicated list + detail
-// records, mirroring SeaRates ERP's "Party Type" screen (Name / Code / Is
+// records, mirroring CargoFlo ERP's "Party Type" screen (Name / Code / Is
 // Vendor / Color columns, and a detail view with a "Partner Type Field Line"
 // table).
 

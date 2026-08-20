@@ -125,7 +125,7 @@ exports.importStatement = async (req, res, next) => {
         amount: Math.abs(amount),
         currency: l.currency || 'AED',
         state: 'draft',
-        company: 'SearatesERP (Dubai)',
+        company: 'CargoFlo (Dubai)',
       }));
     }
 

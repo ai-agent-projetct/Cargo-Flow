@@ -8,7 +8,7 @@ import SendMailModal from './SendMailModal';
 import toast from 'react-hot-toast';
 
 // "Administration > Document Reports > Docx Reports" list, mirroring
-// SeaRates ERP's "Docx Report Template" screen: Report Name / Module
+// CargoFlo ERP's "Docx Report Template" screen: Report Name / Module
 // columns, a Download-only toolbar (no Create), row checkboxes with an "N
 // selected" badge + Action dropdown (Export / Archive / Unarchive / Send
 // Mail (booking)), and an Export Data dialog. Clicking a row opens the

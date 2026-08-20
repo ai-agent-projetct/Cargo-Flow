@@ -6,7 +6,7 @@ import { MEASUREMENT_BASES } from './measurementBasisData';
 import { TRANSPORT_MODES } from './freightMastersData';
 
 // "Administration > Freight Masters > Measurement Basis" list, mirroring
-// SeaRates ERP's "Measurement Basis" screen: Name / Transport Mode (tags) /
+// CargoFlo ERP's "Measurement Basis" screen: Name / Transport Mode (tags) /
 // Package Group / Is Job Measurement / Is Slab Based / Active columns.
 // Clicking a row opens its detail page.
 const MeasurementBasisList = () => {

@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 
 // Generic Odoo-style "Warning" dialog shown when an operation (e.g.
 // Duplicate/Delete) cannot be completed because a field is mandatory or
-// another model references the record, mirroring SeaRates ERP's message.
+// another model references the record, mirroring CargoFlo ERP's message.
 const OperationWarningModal = ({ open, onClose, model, field }) => {
   if (!open) return null;
 

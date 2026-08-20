@@ -5,7 +5,7 @@ import { CARGO_TYPES, TRANSPORT_MODES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Cargo Type / [CODE] Name" detail view,
-// mirroring SeaRates ERP: breadcrumb with record pagination (1/15, with
+// mirroring CargoFlo ERP: breadcrumb with record pagination (1/15, with
 // prev/next chevrons), an "Action" dropdown (Archive + Confirmation popup),
 // Name, Code, Transport Mode link, Calculated Dimension LWH / Is Package
 // Group / Active / Is Courier Shipment toggles, and "Cargo Sub Type" /

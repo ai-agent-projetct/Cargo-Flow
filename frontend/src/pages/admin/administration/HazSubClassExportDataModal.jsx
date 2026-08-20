@@ -50,7 +50,7 @@ const EXPORT_FIELD_TREE = [
 ];
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');
@@ -106,7 +106,7 @@ const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter })
   );
 };
 
-// "Export Data" dialog for the "HAZ Sub Class" list, mirroring SeaRates ERP /
+// "Export Data" dialog for the "HAZ Sub Class" list, mirroring CargoFlo ERP /
 // Odoo's export-data popup: an "Available fields" tree on the left (Created
 // by/on, Display Name, External ID, HAZ Class, ID, Last Modified on, Last
 // Updated by/on, Name - "Created by"/"Last Updated by"/"HAZ Class" each

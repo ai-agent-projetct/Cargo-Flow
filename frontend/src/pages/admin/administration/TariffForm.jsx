@@ -14,7 +14,7 @@ const selectCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg f
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500';
 
 // Create/Edit form for Sell Tariff & Buy Tariff (Administration > Tariff),
-// matching SeaRates ERP's "Buy Tariff / New" screen layout exactly:
+// matching CargoFlo ERP's "Buy Tariff / New" screen layout exactly:
 // header Tariff Name, Type radio, dropdowns, General + Location sections,
 // and a Charges tab with an editable grid + import note.
 const TariffForm = ({ tariffType, basePath }) => {
@@ -152,7 +152,7 @@ const TariffForm = ({ tariffType, basePath }) => {
   };
 
   const handleFetchChargeMaster = () => {
-    // Pulls a representative set of standard charges, similar to SeaRates'
+    // Pulls a representative set of standard charges, similar to CargoFlo'
     // "Fetch Charge Master" action.
     const masterCharges = [
       { chargeName: 'Ocean Freight', unitPrice: '0', currency: form.currency, measurementBasis: 'Per Container', validFrom: '', validTo: '' },

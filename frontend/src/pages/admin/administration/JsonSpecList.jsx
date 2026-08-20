@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 // Generic "Display Name / Model" list used for the Freight Masters JSON
 // specification screens (Product JSON Specifications, FIATA eBL Json
 // Specifications, Carrier Booking JSON Specifications, TMS JSON
-// Specifications). Mirrors SeaRates ERP: a "Main Spec" filter chip and a
+// Specifications). Mirrors CargoFlo ERP: a "Main Spec" filter chip and a
 // table of Display Name / Model. Some records are restricted to specific
 // departments/groups (set up under Administration > Companies & Users >
 // Departments/Groups) - clicking one when the current user isn't a member of

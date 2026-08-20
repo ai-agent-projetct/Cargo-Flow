@@ -15,7 +15,7 @@ const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg fo
 const roCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-600';
 
 // "Administration > CFS Tariff > Charges Tariff" create/edit form, matching
-// SeaRates ERP's "CFS Tariff Charges / New" screen: Buy/Sell Tariff radio,
+// CargoFlo ERP's "CFS Tariff Charges / New" screen: Buy/Sell Tariff radio,
 // Tariff Name, Operation / Transport Mode / Shipping Line / Cargo Type /
 // Company / Valid From-To, General (Customer + Currency), Location
 // (Origin/Destination Country, Origin/Destination, Origin/Destination Port),
@@ -280,7 +280,7 @@ const CFSTariffForm = () => {
           </div>
           <div>
             <p className={fieldLabel}>Company</p>
-            <div className={roCls}>{companies.find((c) => c.id === form.companyId)?.name || 'SearatesERP (Dubai)'}</div>
+            <div className={roCls}>{companies.find((c) => c.id === form.companyId)?.name || 'CargoFlo (Dubai)'}</div>
           </div>
 
           <div>

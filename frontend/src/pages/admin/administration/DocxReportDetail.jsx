@@ -6,7 +6,7 @@ import SendMailModal from './SendMailModal';
 import toast from 'react-hot-toast';
 
 // "Administration > Document Reports > Docx Reports / [Report Name]" detail
-// view, mirroring SeaRates ERP's "Docx Report Template" form: breadcrumb with
+// view, mirroring CargoFlo ERP's "Docx Report Template" form: breadcrumb with
 // record pagination, an "Action" dropdown (Archive / Send Mail (booking)), a
 // "Fields Download" button, Module / Output Type / Active / Template (.docx)
 // / Allowed Companies / Data Representation / Show Wizard fields, and "Excel
@@ -108,7 +108,7 @@ const DocxReportDetail = () => {
           </div>
           <div>
             <p className="text-xs text-slate-500 mb-1">Allowed Companies</p>
-            <span className="text-slate-700">SearatesERP (Dubai)</span>
+            <span className="text-slate-700">CargoFlo (Dubai)</span>
           </div>
 
           <div>

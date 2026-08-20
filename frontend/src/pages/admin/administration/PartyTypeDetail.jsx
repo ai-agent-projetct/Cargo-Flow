@@ -5,7 +5,7 @@ import { PARTY_TYPES, PARTY_TYPE_COLORS } from './partyTypeData';
 import SimpleWarningModal from './SimpleWarningModal';
 
 // "Administration > Freight Masters > Party Type / Name" detail view,
-// mirroring SeaRates ERP: breadcrumb with record pagination (N/Total, with
+// mirroring CargoFlo ERP: breadcrumb with record pagination (N/Total, with
 // prev/next chevrons), "Edit" button, an "Action" dropdown with only
 // "Duplicate" (which surfaces a "The name must be unique!" Warning dialog),
 // Name, Code, Is Vendor checkbox, Color swatch, and a "Partner Type Field

@@ -8,6 +8,8 @@ import { accountingAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
 import { STATE, STATE_PILL, PAYMENT, PAYMENT_PILL, fmtDate, isOverdue, money } from './constants';
+import { exportCsv, parseCsv } from '../../../utils/exportCsv';
+import toast from 'react-hot-toast';
 
 const PAGE_SIZE = 80;
 
@@ -70,12 +72,19 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
   const menuRef = useRef(null);
 
   const columns = COLUMNS_BY_MENU[menu] || COLUMNS_BY_MENU.invoices;
-  const showNumber = columns[0] === 'Number';
   // Vendor menus live under /vendors and drop the shipment + foreign-currency
   // columns, so both the row layout and the detail link differ.
   const vendorSide = VENDOR_MENUS.has(menu);
   const section = vendorSide ? 'vendors' : 'customers';
   const segment = SEGMENT_BY_MENU[menu] || menu;
+  // Columns the user has switched off, remembered per menu.
+  const [hidden, setHidden] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`cargoflo.cols.${menu}`)) || []; } catch { return []; }
+  });
+  const shownColumns = columns.filter((c) => !hidden.includes(c));
+  useEffect(() => {
+    localStorage.setItem(`cargoflo.cols.${menu}`, JSON.stringify(hidden));
+  }, [hidden, menu]);
 
   // The dashboard's counter links arrive as query params.
   const preset = useMemo(() => ({
@@ -131,91 +140,143 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
   const to = Math.min(page * PAGE_SIZE, total);
   const toggle = (k) => setFilters((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
 
-  const Row = (r) => {
+  // Export what is on screen, so the file reflects the filters in force.
+  const onExport = () => {
+    const spec = [
+      { key: 'name', label: 'Number' },
+      { key: 'partner', label: vendorSide ? 'Vendor' : 'Customer' },
+      { key: 'invoiceDate', label: vendorSide ? 'Bill Date' : 'Invoice Date' },
+      { key: 'invoiceDateDue', label: 'Due Date' },
+      { key: 'companyCurrency', label: 'Company Currency' },
+      { key: 'amountUntaxed', label: 'Tax Excluded' },
+      { key: 'amountTax', label: 'Tax' },
+      { key: 'amountTotal', label: 'Total' },
+      { key: 'amountResidual', label: 'Amount Due' },
+      { key: 'paymentState', label: 'Payment Status', format: (v) => PAYMENT[v] || v },
+      { key: 'state', label: 'Status', format: (v) => STATE[v] || v },
+      { key: 'houseShipmentRefs', label: 'House Shipment' },
+      { key: 'serviceJobRefs', label: 'Service Jobs' },
+    ];
+    if (exportCsv(rows, spec, menu)) toast.success(`Exported ${rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
+  // Bring a CSV back in as draft documents. Only the columns the export writes
+  // are understood, so a round-trip works without extra mapping.
+  const onUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!can('invoice', 'create')) { toast.error('You are not allowed to create records here'); return; }
+    try {
+      const { rows: parsed } = await parseCsv(file);
+      if (!parsed.length) { toast.error('No rows found in that file'); return; }
+      let made = 0;
+      for (const r of parsed) {
+        const partner = r.Customer || r.Vendor || r.Partner;
+        if (!partner) continue;
+        const ok = await guard(() => accountingAPI.create({
+          partner,
+          invoiceDate: r['Invoice Date'] || r['Bill Date'] || null,
+          invoiceDateDue: r['Due Date'] || null,
+          amountUntaxed: Number(r['Tax Excluded'] || 0),
+          amountTax: Number(r.Tax || 0),
+          amountTotal: Number(r.Total || 0),
+        }, menu));
+        if (ok) made += 1;
+      }
+      toast.success(`Imported ${made} draft ${made === 1 ? 'record' : 'records'}`);
+      load();
+    } catch (err) {
+      toast.error('Could not read that file — export a list first to see the expected format');
+    }
+  };
+
+  // Favourites are per-menu and remembered locally, the way the demo keeps a
+  // starred filter set between visits.
+  const favKey = `cargoflo.fav.${menu}`;
+  const [favorite, setFavorite] = useState(() => !!localStorage.getItem(favKey));
+  const toggleFavorite = () => {
+    if (favorite) { localStorage.removeItem(favKey); setFavorite(false); toast('Removed from favourites'); return; }
+    localStorage.setItem(favKey, JSON.stringify({ filters, search, groupBy }));
+    setFavorite(true);
+    toast.success('Saved current filters to favourites');
+  };
+
+  // Restore a saved favourite when the menu changes.
+  useEffect(() => {
+    const saved = localStorage.getItem(`cargoflo.fav.${menu}`);
+    setFavorite(!!saved);
+    if (saved) {
+      try {
+        const v = JSON.parse(saved);
+        setFilters(v.filters || []);
+        setSearch(v.search || '');
+        setGroupBy(v.groupBy || '');
+      } catch { /* a corrupt entry just means no favourite */ }
+    }
+  }, [menu]);
+
+  // Cells are keyed by their column label so the column toggle can drop them
+  // and the header without the two drifting out of alignment.
+  const cellsFor = (r) => {
     const overdue = isOverdue(r.invoiceDateDue, r.paymentState);
     const draft = r.state === 'draft';
-    const statusCells = (
-      <>
-        <td className="px-2 py-1.5">
-          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${PAYMENT_PILL[r.paymentState]}`}>
-            {PAYMENT[r.paymentState]}
-          </span>
-        </td>
-        <td className="px-2 py-1.5">
-          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATE_PILL[r.state]}`}>
-            {STATE[r.state]}
-          </span>
-        </td>
-      </>
-    );
-    const numberCell = showNumber && (
-      <td className="px-2 py-1.5 whitespace-nowrap">
+    const txt = draft ? 'text-blue-700' : 'text-gray-700';
+    const partnerLabel = vendorSide ? 'Vendor' : 'Customer';
+    const dateLabel = vendorSide ? 'Bill Date' : 'Invoice Date';
+    const curLabel = menu === 'invoices' ? 'Invoice Currency' : 'Credit Note Currency';
+
+    const map = {
+      Number: (
         <span className="inline-flex items-center gap-1">
           <ExternalLink className="w-3 h-3 text-blue-700" />
           <span className={`font-semibold text-xs ${draft ? 'text-blue-700' : 'text-gray-900'}`}>{r.name}</span>
         </span>
-      </td>
-    );
-    const partnerCell = (
-      <td className={`px-2 py-1.5 text-xs max-w-[10rem] truncate ${draft ? 'text-blue-700' : 'text-gray-800'}`}
-        title={r.partner}>{r.partner}</td>
-    );
-    const dateCells = (
-      <>
-        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-700'}`}>
-          {fmtDate(r.invoiceDate)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${overdue ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-          {fmtDate(r.invoiceDateDue)}
-        </td>
-      </>
-    );
-    const amountCells = (
-      <>
-        <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.companyCurrency}</td>
-        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
-          {money(r.amountUntaxed, r.companyCurrency)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap font-semibold ${draft ? 'text-blue-700' : 'text-gray-900'}`}>
-          {money(r.amountTotal, r.companyCurrency)}
-        </td>
-      </>
-    );
+      ),
+      [partnerLabel]: <span className={`text-xs ${draft ? 'text-blue-700' : 'text-gray-800'}`} title={r.partner}>{r.partner}</span>,
+      'Service Jobs': (r.serviceJobRefs || []).map((s) => <Chip key={s}>{s}</Chip>),
+      'House Shipment': (r.houseShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>),
+      'Master Shipment': (r.masterShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>),
+      Reference: <span className="text-xs text-gray-700" title={r.ref || ''}>{r.ref || ''}</span>,
+      [dateLabel]: <span className={`text-xs ${txt}`}>{fmtDate(r.invoiceDate)}</span>,
+      'Due Date': <span className={`text-xs ${overdue ? 'text-red-600 font-medium' : 'text-gray-700'}`}>{fmtDate(r.invoiceDateDue)}</span>,
+      'Next Activity': <span className="text-gray-300">○</span>,
+      'Company Currency': <span className={`text-xs ${txt}`}>{r.companyCurrency}</span>,
+      'Tax Excluded': <span className={`text-xs ${draft ? 'text-blue-700' : 'text-gray-800'}`}>{money(r.amountUntaxed, r.companyCurrency)}</span>,
+      Total: <span className={`text-xs font-semibold ${draft ? 'text-blue-700' : 'text-gray-900'}`}>{money(r.amountTotal, r.companyCurrency)}</span>,
+      [curLabel]: <span className={`text-xs ${txt}`}>{r.currency}</span>,
+      'Total in Currency': <span className={`text-xs ${draft ? 'text-blue-700' : 'text-gray-800'}`}>{money(r.amountTotalCurrency, r.currency)}</span>,
+      'Payment Status': (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${PAYMENT_PILL[r.paymentState]}`}>
+          {PAYMENT[r.paymentState]}
+        </span>
+      ),
+      Status: (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATE_PILL[r.state]}`}>
+          {STATE[r.state]}
+        </span>
+      ),
+    };
+    return map;
+  };
 
+  const RIGHT_ALIGNED = new Set(['Tax Excluded', 'Total', 'Total in Currency']);
+
+  const Row = (r) => {
+    const map = cellsFor(r);
     return (
       <tr key={r.id} onClick={() => navigate(`/admin/accounting/${section}/${segment}/${r.id}`)}
         className="hover:bg-gray-50 cursor-pointer">
         <td className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" className="rounded border-gray-300" />
         </td>
-        {numberCell}
-        {partnerCell}
-        {vendorSide ? (
-          <>
-            {dateCells}
-            {/* Vendor documents show the supplier's own reference instead of
-                the shipment chips the customer views carry. */}
-            <td className="px-2 py-1.5 text-xs text-gray-700 max-w-[12rem] truncate" title={r.ref || ''}>
-              {r.ref || ''}
-            </td>
-            <td className="px-2 py-1.5 text-gray-300 text-center">○</td>
-            {amountCells}
-          </>
-        ) : (
-          <>
-            <td className="px-2 py-1.5">{(r.serviceJobRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-            <td className="px-2 py-1.5">{(r.houseShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-            <td className="px-2 py-1.5">{(r.masterShipmentRefs || []).map((s) => <Chip key={s}>{s}</Chip>)}</td>
-            {dateCells}
-            <td className="px-2 py-1.5 text-gray-300 text-center">○</td>
-            {amountCells}
-            <td className={`px-2 py-1.5 text-xs ${draft ? 'text-blue-700' : 'text-gray-700'}`}>{r.currency}</td>
-            <td className={`px-2 py-1.5 text-xs text-right whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-800'}`}>
-              {money(r.amountTotalCurrency, r.currency)}
-            </td>
-          </>
-        )}
-        {statusCells}
+        {shownColumns.map((c) => (
+          <td key={c}
+            className={`px-2 py-1.5 max-w-[12rem] truncate whitespace-nowrap ${RIGHT_ALIGNED.has(c) ? 'text-right' : ''}`}>
+            {map[c] ?? ''}
+          </td>
+        ))}
       </tr>
     );
   };
@@ -239,10 +300,12 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
               <Plus className="w-4 h-4" /> Create
             </button>
           )}
-          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
+          <label className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
             <Upload className="w-4 h-4" /> Upload
-          </button>
-          <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+            <input type="file" accept=".csv" className="hidden" onChange={onUpload} />
+          </label>
+          <button onClick={onExport}
+            className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
             <Download className="w-4 h-4" />
           </button>
         </div>
@@ -301,8 +364,27 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-          <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+          <button onClick={toggleFavorite}
+            className={`flex items-center gap-1 hover:text-gray-900 ${favorite ? 'text-amber-500' : ''}`}>
+            <Star className={`w-3.5 h-3.5 ${favorite ? 'fill-amber-400' : ''}`} /> Favorites
+          </button>
+          <div className="relative">
+            <button onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}
+              className="hover:text-gray-900" title="Toggle columns"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {openMenu === 'cols' && (
+              <div className="absolute right-0 top-7 z-20 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase">Columns</div>
+                {columns.map((c) => (
+                  <label key={c} className="flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300"
+                      checked={!hidden.includes(c)}
+                      onChange={() => setHidden((h) => (h.includes(c) ? h.filter((x) => x !== c) : [...h, c]))} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-xs">
             <span>{from}-{to} / {total}</span>
@@ -352,19 +434,19 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
               <thead className="bg-white border-b border-gray-200">
                 <tr>
                   <th className="px-2 py-2 w-8"><input type="checkbox" className="rounded border-gray-300" /></th>
-                  {columns.map((h) => (
+                  {shownColumns.map((h) => (
                     <th key={h} className="text-left px-2 py-2 font-semibold text-gray-800 text-xs whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.length === 0 ? (
-                  <tr><td colSpan={columns.length + 1} className="text-center py-10 text-gray-400">No records found</td></tr>
+                  <tr><td colSpan={shownColumns.length + 1} className="text-center py-10 text-gray-400">No records found</td></tr>
                 ) : groups ? groups.map(([label, gr]) => (
                   <React.Fragment key={label}>
                     <tr className="bg-gray-100 cursor-pointer"
                       onClick={() => setCollapsed((c) => ({ ...c, [label]: !c[label] }))}>
-                      <td colSpan={columns.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
+                      <td colSpan={shownColumns.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
                         <span className="inline-flex items-center gap-1">
                           {collapsed[label] ? <ChevRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           {label} ({gr.length})
@@ -381,14 +463,14 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
                     {/* Totals sit under Tax Excluded and Total, so the leading
                         span is however many columns precede them (+1 for the
                         checkbox), and the trailing span is whatever follows. */}
-                    <td colSpan={columns.indexOf('Tax Excluded') + 1} />
+                    <td colSpan={shownColumns.indexOf('Tax Excluded') + 1} />
                     <td className="px-2 py-2 text-xs text-right font-semibold text-gray-900 whitespace-nowrap">
                       {Number(meta.totals?.untaxed || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-2 py-2 text-xs text-right font-semibold text-gray-900 whitespace-nowrap">
                       {Number(meta.totals?.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
-                    <td colSpan={columns.length - columns.indexOf('Total') - 1} />
+                    <td colSpan={shownColumns.length - shownColumns.indexOf('Total') - 1} />
                   </tr>
                 </tfoot>
               )}

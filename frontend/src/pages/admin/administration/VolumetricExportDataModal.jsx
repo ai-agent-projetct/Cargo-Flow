@@ -64,7 +64,7 @@ const EXPORT_FIELD_TREE = [
 ];
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');
@@ -123,7 +123,7 @@ const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter })
 };
 
 // "Export Data" dialog for the "Volumetric Divided Value" list, mirroring
-// SeaRates ERP / Odoo's export-data popup: an "Available fields" tree on the
+// CargoFlo ERP / Odoo's export-data popup: an "Available fields" tree on the
 // left (Transport Mode / UOM / Pound / Divided Value plus standard Odoo meta
 // fields, each with "Created by" / "Last Updated by" sub-trees), a "Fields to
 // export" list on the right with reordering, an Export Format choice, and

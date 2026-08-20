@@ -4,7 +4,7 @@ import SearchBar from '../../../common/SearchBar';
 import { UOM_CATEGORIES } from './uomCategoriesData';
 
 // "Administration > Freight Masters > Unit of Measures" list, mirroring
-// SeaRates ERP's "Units of Measure Categories" screen: one row per UoM
+// CargoFlo ERP's "Units of Measure Categories" screen: one row per UoM
 // category, with all UoMs for that category shown as chips and the
 // reference/active UoM highlighted.
 const UomCategoriesList = () => {

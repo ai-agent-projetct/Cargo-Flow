@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Download, ChevronLeft, ChevronDown, ChevronRight, X, Search } from 'lucide-react';
 import { CARGO_TYPES, TRANSPORT_MODES } from './freightMastersData';
 
-// "Administration > Freight Masters > Cargo Type" list, mirroring SeaRates
+// "Administration > Freight Masters > Cargo Type" list, mirroring CargoFlo
 // ERP's "Cargo Type" screen: grouped by Transport Mode (collapsible group
 // headers with record counts), Code / Name / Transport Mode / Active columns.
 const CargoTypeList = () => {

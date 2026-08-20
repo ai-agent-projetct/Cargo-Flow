@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Bot, X, Send, Loader2, Wrench, ShieldAlert, Sparkles } from 'lucide-react';
 import { aiAPI } from '../services/api';
 
-// Floating assistant, mirroring the SeaRates demo's Assistant button. Chats
+// Floating assistant, mirroring the CargoFlo demo's Assistant button. Chats
 // against /api/ai/chat, which runs Claude with tool access to the live ERP data.
 
 const SUGGESTIONS = [

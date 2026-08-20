@@ -1,6 +1,6 @@
 # CargoFlo - Cargo Export/Import ERP System
 
-A full-featured cargo management ERP similar to Searates Tech, built with React, Node.js, and MySQL.
+A full-featured cargo management ERP similar to CargoFlo Tech, built with React, Node.js, and MySQL.
 
 ---
 

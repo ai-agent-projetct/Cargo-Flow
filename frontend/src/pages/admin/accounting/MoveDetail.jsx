@@ -6,6 +6,7 @@ import { accountingAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
 import OrganizationChatter from '../organization/OrganizationChatter';
+import { exportCsv } from '../../../utils/exportCsv';
 import {
   STATE, STATUSBAR, CHARGE_SOURCES, FORM_TABS, LINE_COLUMNS, PRODUCTS, ACCOUNTS,
   TAXES, CURRENCIES, fmtDate, money, num, recalcLine, totalsFor,
@@ -37,6 +38,11 @@ const MoveDetail = ({ menu = 'invoices' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { guard, can } = usePermissions();
+  // Vendor documents live under /vendors and the debit-note URL segment differs
+  // from its menu key, so both are derived rather than assumed.
+  const VENDOR_MENUS = ['bills', 'refunds', 'vendor-debit-notes'];
+  const section = VENDOR_MENUS.includes(menu) ? 'vendors' : 'customers';
+  const segment = menu === 'vendor-debit-notes' ? 'debit-notes' : menu;
   const isNew = !id || id === 'create';
 
   const [rec, setRec] = useState(isNew ? BLANK : null);
@@ -48,7 +54,60 @@ const MoveDetail = ({ menu = 'invoices' }) => {
   const [busy, setBusy] = useState(false);
   const [picker, setPicker] = useState(null); // { kind, options, chosen[] }
   const [limitPrompt, setLimitPrompt] = useState(null);
+  const [actionOpen, setActionOpen] = useState(false);
   const busyRef = useRef(false);
+  const actionRef = useRef(null);
+
+  // Close the Action menu on an outside click.
+  useEffect(() => {
+    const away = (e) => { if (actionRef.current && !actionRef.current.contains(e.target)) setActionOpen(false); };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, []);
+
+  // Copy the record as a fresh draft and open it.
+  const duplicate = async () => {
+    setActionOpen(false);
+    const src = rec || {};
+    const res = await guard(() => accountingAPI.create({
+      partner: src.partner,
+      partnerAddress: src.partnerAddress,
+      invoiceDate: src.invoiceDate,
+      invoiceDateDue: src.invoiceDateDue,
+      currency: src.currency,
+      companyCurrency: src.companyCurrency,
+      lines: src.lines || [],
+      narration: src.narration,
+    }, menu));
+    if (res) {
+      toast.success('Duplicated as a new draft');
+      navigate(`/admin/accounting/${section}/${segment}/${res.data.data.id}`);
+    }
+  };
+
+  const remove = async () => {
+    setActionOpen(false);
+    if (rec?.state !== 'draft') { toast.error('Only a draft can be deleted'); return; }
+    const res = await guard(() => accountingAPI.delete(id));
+    if (res) { toast.success('Deleted'); navigate(`/admin/accounting/${section}/${segment}`); }
+  };
+
+  const onExportOne = () => {
+    setActionOpen(false);
+    const lines = rec?.lines || [];
+    if (!lines.length) { toast.error('This document has no lines to export'); return; }
+    exportCsv(lines, [
+      { key: 'product', label: 'Product' },
+      { key: 'label', label: 'Label' },
+      { key: 'account', label: 'Account' },
+      { key: 'quantity', label: 'Quantity' },
+      { key: 'price', label: 'Price' },
+      { key: 'taxes', label: 'Taxes' },
+      { key: 'vatAmount', label: 'Tax Amount' },
+      { key: 'subtotal', label: 'Subtotal' },
+    ], (rec.name || 'document').replace(/\//g, '-'));
+    toast.success('Exported document lines');
+  };
 
   const load = useCallback(async () => {
     setEditing(isNew);
@@ -59,9 +118,9 @@ const MoveDetail = ({ menu = 'invoices' }) => {
     if (res) {
       const d = res.data.data;
       setRec(d); setDraft(d); setCredit(d.creditLimit || null);
-    } else navigate(`/admin/accounting/customers/${menu}`);
+    } else navigate(`/admin/accounting/${section}/${segment}`);
     setLoading(false);
-  }, [id, isNew, guard, navigate, menu]);
+  }, [id, isNew, guard, navigate, section, segment]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -114,7 +173,7 @@ const MoveDetail = ({ menu = 'invoices' }) => {
       if (isNew) {
         const res = await accountingAPI.create(draft, menu);
         toast.success('Invoice created');
-        navigate(`/admin/accounting/customers/${menu}/${res.data.data.id}`);
+        navigate(`/admin/accounting/${section}/${segment}/${res.data.data.id}`);
       } else {
         const res = await accountingAPI.update(id, draft);
         setRec(res.data.data); setDraft(res.data.data); setEditing(false);
@@ -144,7 +203,7 @@ const MoveDetail = ({ menu = 'invoices' }) => {
       {/* Breadcrumb + pager */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => navigate(`/admin/accounting/customers/${menu}`)} className="text-blue-700 hover:underline">
+          <button onClick={() => navigate(`/admin/accounting/${section}/${segment}`)} className="text-blue-700 hover:underline">
             {menu === 'invoices' ? 'Invoices' : menu === 'credit-notes' ? 'Credit Notes' : 'Debit Notes'}
           </button>
           <span className="text-gray-400">/</span>
@@ -164,14 +223,32 @@ const MoveDetail = ({ menu = 'invoices' }) => {
           {editing ? (
             <>
               <button onClick={save} disabled={busy} className={btn}>Save</button>
-              <button onClick={() => { if (isNew) navigate(`/admin/accounting/customers/${menu}`); else { setDraft(rec); setEditing(false); } }}
+              <button onClick={() => { if (isNew) navigate(`/admin/accounting/${section}/${segment}`); else { setDraft(rec); setEditing(false); } }}
                 className={ghost}>Discard</button>
             </>
           ) : (
             <>
               {a.edit && can('invoice', 'write') && <button onClick={() => setEditing(true)} className={btn}>Edit</button>}
-              <button className={`${ghost} flex items-center gap-1.5`}><Printer className="w-4 h-4" /> Print</button>
-              <button className={ghost}>⚙ Action</button>
+              <button onClick={() => window.print()} className={`${ghost} flex items-center gap-1.5`}>
+                <Printer className="w-4 h-4" /> Print
+              </button>
+              <div className="relative" ref={actionRef}>
+                <button onClick={() => setActionOpen((o) => !o)} className={ghost}>⚙ Action</button>
+                {actionOpen && (
+                  <div className="absolute left-0 top-9 z-30 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                    <button onClick={duplicate}
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicate</button>
+                    <button onClick={onExportOne}
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Export</button>
+                    {/* Only a draft can be deleted; a posted document must be
+                        cancelled and reset first, same as the source system. */}
+                    <button onClick={remove} disabled={rec?.state !== 'draft'}
+                      className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-white">
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>

@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { ADJUSTMENT_RATIO_TYPES } from './adjustmentRatioTypeData';
 
 // "Administration > Freight Masters > Adjustment Ratio Type" list, mirroring
-// SeaRates ERP's "Adjustment Ratio Type" screen: a Download icon (no
+// CargoFlo ERP's "Adjustment Ratio Type" screen: a Download icon (no
 // Create), Name / Is Package Group columns. Clicking a row opens its detail
 // page.
 const AdjustmentRatioTypeList = () => {

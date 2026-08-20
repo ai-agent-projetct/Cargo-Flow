@@ -89,7 +89,7 @@ const ensureTariffsTable = async () => {
 };
 
 // The House Shipment workflow (ff_jobs.status) was expanded from the original
-// 6-status enum to the full 12-status SeaRates workflow. Sequelize sync is
+// 6-status enum to the full 12-status CargoFlo workflow. Sequelize sync is
 // skipped, so widen the MySQL column directly and add the `revenue` JSON
 // column used to display estimated/actual receivable, payable and margin.
 const ensureFFJobsSchema = async () => {
@@ -412,7 +412,7 @@ const ensureOperationsTables = async () => {
       console.log('Created consolidations table.');
     } else {
       // Export Console Generation's detail form was expanded to match the live
-      // SeaRates layout (Consolidation Type / Sailing Schedule / Party /
+      // CargoFlo layout (Consolidation Type / Sailing Schedule / Party /
       // POR-POD-POL-FPD / Vessel Info / Package + Commodity lines).
       const consCols = await qi.describeTable('consolidations');
       const additions = {
@@ -971,7 +971,7 @@ const ensureOperationsTables = async () => {
 
     if (!tables.includes('organizations')) {
       // Partner master behind the Organizations module. Columns follow the
-      // SeaRates Organizations form (header + its six tabs).
+      // CargoFlo Organizations form (header + its six tabs).
       await qi.createTable('organizations', {
         id: { type: DataTypes.UUID, primaryKey: true, allowNull: false },
         companyType: { type: DataTypes.ENUM('person', 'company'), allowNull: false, defaultValue: 'person' },
@@ -1544,7 +1544,7 @@ const seedMasterData = async () => {
         { code: 'MXAF-EXPO', name: 'MXAF-EXPO', extra: '$ 1.00', extra2: '1.00 AED' },
         { code: '', name: 'Terminal Handling Charges', extra: '$ 400.00', extra2: '300.00 AED' },
         { code: '', name: 'ABC', extra: '₹ 1.00', extra2: '1.00 AED' },
-        { code: 'SearatesERP(China)-AF', name: 'ADMIN FEE', extra: '¥ 1.00', extra2: '1.00 AED' },
+        { code: 'CargoFlo (China)-AF', name: 'ADMIN FEE', extra: '¥ 1.00', extra2: '1.00 AED' },
         { code: 'AD_VALOREM', name: 'Ad-Valorem', extra: '1.00 AED', extra2: '1.00 AED' },
         { code: '', name: 'Air carriage', extra: 'RM 1.00', extra2: '1.00 AED' },
         { code: '', name: 'All inclusive', extra: '₹ 60,000.00', extra2: '50,000.00 AED' },
@@ -1556,7 +1556,7 @@ const seedMasterData = async () => {
     };
 
     // One-time fixup: re-seed categories whose column layout was corrected
-    // after verifying against the live SeaRates demo (Container Category,
+    // after verifying against the live CargoFlo demo (Container Category,
     // Countries, Vessel), replacing the earlier placeholder rows.
     const staleVessel = await MasterDataItem.count({ where: { category: 'vessel', code: 'IMO9321483' } });
     if (staleVessel > 0) {
@@ -1565,7 +1565,7 @@ const seedMasterData = async () => {
     }
 
     // One-time fixup: re-seed categories whose column layout was corrected
-    // after a deeper pass against the live SeaRates demo (Container/Package
+    // after a deeper pass against the live CargoFlo demo (Container/Package
     // Type, MAWB Stocks, Status Change Reasons, Warehouses, Serial Number),
     // plus the newly-added Incoterm category.
     const staleContainerType = await MasterDataItem.count({ where: { category: 'container-package-type', code: '20RF' } });
@@ -1684,7 +1684,7 @@ const seedDepartments = async () => {
   }
 };
 
-// Operations master data captured 1:1 from the live SeaRates demo
+// Operations master data captured 1:1 from the live CargoFlo demo
 // (Operations > CFS > Receive Entry / Delivery Entry, and Operations >
 // Export Console Generation). The reference numbers encode
 // <mode>-<direction>-<cargo>-<doc>-<month>-<year>-<seq>, so transport mode,
@@ -1927,13 +1927,13 @@ const OCR_DOCUMENTS = [
 // Companies the demo user can switch between, in the order the live
 // company-switcher lists them. [name, code, currency, country, city]
 const OPERATING_COMPANIES = [
-  ['SearatesERP (Dubai)', 'SR-DXB', 'AED', 'United Arab Emirates', 'Dubai'],
-  ['Searates USA', 'SR-USA', 'USD', 'United States', 'New York'],
-  ['SearatesERP(China)', 'SR-CN', 'CNY', 'China', 'Shanghai'],
-  ['SearatesERP(India)', 'SR-IN', 'INR', 'India', 'Ahmedabad'],
-  ['SearatesERP(Saudi)', 'SR-SA', 'SAR', 'Saudi Arabia', 'Riyadh'],
-  ['Searates (Malaysia)', 'SR-MY', 'MYR', 'Malaysia', 'Kuala Lumpur'],
-  ['Searates(United Arab Emirates)', 'SR-UAE', 'AED', 'United Arab Emirates', 'Abu Dhabi'],
+  ['CargoFlo (Dubai)', 'CF-DXB', 'AED', 'United Arab Emirates', 'Dubai'],
+  ['CargoFlo (USA)', 'CF-USA', 'USD', 'United States', 'New York'],
+  ['CargoFlo (China)', 'CF-CN', 'CNY', 'China', 'Shanghai'],
+  ['CargoFlo (India)', 'CF-IN', 'INR', 'India', 'Ahmedabad'],
+  ['CargoFlo (Saudi)', 'CF-SA', 'SAR', 'Saudi Arabia', 'Riyadh'],
+  ['CargoFlo (Malaysia)', 'CF-MY', 'MYR', 'Malaysia', 'Kuala Lumpur'],
+  ['CargoFlo (United Arab Emirates)', 'CF-UAE', 'AED', 'United Arab Emirates', 'Abu Dhabi'],
   ['S4 Logistics', 'S4-LOG', 'USD', 'United States', 'Houston'],
 ];
 
@@ -2119,7 +2119,7 @@ const ORGANIZATIONS = [
   // workflow ribbon show non-zero counts.
   ['1-1', '1_demo', 'person', '', '1_demo@gmail.com', '', '', ''],
   ['A-17', 'Atharva', 'company', '', 'mohamedebrahim@ics-global.in', 'DUBAI (AE)', 'United Arab Emirates', ''],
-  ['A-74', 'admin', 'person', '+91 73377 69988', 'ajay.bhaskar@searatess.com', '', 'India', ''],
+  ['A-74', 'admin', 'person', '+91 73377 69988', 'ajay.bhaskar@cargoflo.com', '', 'India', ''],
   ['MK-5', 'Maria Knights', 'person', '', 'xyz@gmail.com', '', 'Afghanistan', ''],
   ['T-40', 'TechSupport-Admin', 'person', '', '', '', '', ''],
   ['MS-13', 'Mr. Sam', 'person', '+49 30 12345678', 'lancelot@kingsmen.com', '', 'Germany', ''],
@@ -2140,9 +2140,9 @@ const ORGANIZATIONS = [
   ['RR-7', 'Rishirajsinh Rana', 'company', '', 'test@test.com', '', '', ''],
   ['S-177', 'Shahim', 'person', '', '', '', '', ''],
   ['B-26', 'Brandom', 'person', '+91 94793 28239', 'brandom@gmail.com', '', 'India', ''],
-  ['A-71', 'ABC', 'person', '', 'ajay.bhaskar@searatess5.com', '', 'India', ''],
+  ['A-71', 'ABC', 'person', '', 'ajay.bhaskar@cargoflo5.com', '', 'India', ''],
   ['S-176', 'Sandi', 'person', '', 'sandi@gmail.com', '', '', ''],
-  ['T-39', 'Tepm', 'person', '', 'ajay.bhaskar@searatess3.com', '', 'India', ''],
+  ['T-39', 'Tepm', 'person', '', 'ajay.bhaskar@cargoflo3.com', '', 'India', ''],
   ['DA-13', 'Deco Addict', 'company', '', '', '', '', ''],
   ['I-10', 'ifreight', 'company', '', 'ifreight@gmail.com', '', '', ''],
   ['S-175', 'S-173', 'person', '', '', '', '', ''],
@@ -2180,9 +2180,16 @@ const seedOperationsData = async () => {
     const { CFSReceipt, CFSDelivery, Consolidation, ShipmentSharing } = require('../models');
     const { Op } = require('sequelize');
 
+    // Rows seeded before the rename still carry the old brand, including the
+    // company codes the seeds below look up. Run this first so those lookups
+    // resolve against renamed rows rather than silently falling back.
+    const { rebrandData } = require('./rebrandData');
+    const renamed = await rebrandData(sequelize);
+    if (renamed) console.log(`Rebranded ${renamed} stored values to CargoFlo.`);
+
     // One-time fixup: drop the earlier placeholder rows (they use the generated
     // "CFS-DLV-"/"SHR-" numbering rather than the demo's real reference format)
-    // so the real SeaRates records below can take their place.
+    // so the real CargoFlo records below can take their place.
     const staleDeliveries = await CFSDelivery.count({ where: { deliveryNumber: { [Op.like]: '%CFS-DLV-%' } } });
     if (staleDeliveries > 0) {
       await CFSDelivery.destroy({ where: { deliveryNumber: { [Op.like]: '%CFS-DLV-%' } } });
@@ -2283,7 +2290,7 @@ const seedOperationsData = async () => {
       ['freight_schedule', 'inttra_environment', 'sandbox', 'select', false],
       ['freight_schedule', 'inttra_client_id', '', 'text', true],
       ['freight_schedule', 'inttra_client_secret', '', 'text', true],
-      ['freight_schedule', 'searates_schedule_enabled', 'false', 'bool', false],
+      ['freight_schedule', 'cargoflo_schedule_enabled', 'false', 'bool', false],
       ['crm', 'multi_teams', 'true', 'bool', false],
       ['crm', 'enable_party_types', 'true', 'bool', false],
       ['crm', 'enable_prospect_mandatory', 'false', 'bool', false],
@@ -2309,8 +2316,8 @@ const seedOperationsData = async () => {
       ['freight', 'load_calculator_enabled', 'true', 'bool', false],
       ['freight', 'load_calculator_api_key', '', 'text', true],
       ['freight', 'shipment_tracking_enabled', 'true', 'bool', false],
-      ['freight', 'tracking_provider', 'searates', 'select', false],
-      ['freight', 'searates_product_key', '', 'text', true],
+      ['freight', 'tracking_provider', 'cargoflo', 'select', false],
+      ['freight', 'cargoflo_product_key', '', 'text', true],
       ['freight', 'tracking_update_frequency_hours', '2', 'number', false],
       ['freight', 'create_house_from_master', 'true', 'bool', false],
       ['freight', 'charge_master_migration', 'true', 'bool', false],
@@ -2390,7 +2397,7 @@ const seedOperationsData = async () => {
     if ((await AccountJournal.count()) === 0) {
       const { JOURNALS, ageingLabels, shape } = require('./seedData/accountJournals');
       const labels = ageingLabels();
-      const dubai = await Company.findOne({ where: { code: 'SR-DXB' } });
+      const dubai = await Company.findOne({ where: { code: 'CF-DXB' } });
       await AccountJournal.bulkCreate(JOURNALS.map(
         ([name, type, code, bankAccNumber, balanceGl, outstanding, latest,
           toReconcile, isConnected, counters, colour], i) => {
@@ -2417,7 +2424,7 @@ const seedOperationsData = async () => {
               : [],
             sparkline: ['bank', 'cash'].includes(type) ? shape(seed, 12, 100) : [],
             companyId: dubai?.id || null,
-            company: dubai?.name || 'SearatesERP (Dubai)',
+            company: dubai?.name || 'CargoFlo (Dubai)',
             active: true,
           };
         }
@@ -2502,7 +2509,7 @@ const seedOperationsData = async () => {
           lines,
           reversedEntryName: reversed || null,
           ref: reversed ? `Reversal of: ${reversed}, None` : null,
-          company: 'SearatesERP (Dubai)',
+          company: 'CargoFlo (Dubai)',
           followerCount: 1,
           activityLog: [{
             at: new Date(invDate || Date.now()).toISOString(),
@@ -2550,7 +2557,7 @@ const seedOperationsData = async () => {
           amount,
           currency: 'AED',
           state,
-          company: 'SearatesERP (Dubai)',
+          company: 'CargoFlo (Dubai)',
           followerCount: 1,
           activityLog: [{
             at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
@@ -2584,7 +2591,7 @@ const seedOperationsData = async () => {
               vatAmount: taxes,
               subtotal: untaxed,
             }],
-            company: 'SearatesERP (Dubai)',
+            company: 'CargoFlo (Dubai)',
             followerCount: 1,
             activityLog: [{
               at: new Date('2026-01-01').toISOString(), author: 'Anix Logistics PVT LTD',
@@ -2640,7 +2647,7 @@ const seedOperationsData = async () => {
             account: assetType === 'purchase' ? '101010 Fixed Assets' : '501001 Cost of Services',
             journal: 'Miscellaneous Operations',
             state: 'running',
-            company: 'SearatesERP (Dubai)',
+            company: 'CargoFlo (Dubai)',
           });
           const lines = asset.buildSchedule();
           // Recognise everything scheduled on or before today.
@@ -2716,7 +2723,7 @@ const seedOperationsData = async () => {
               ref: reversedOf
                 ? `${moveType === 'in_refund' ? 'Reversal of' : 'Against'}: ${reversedOf}`
                 : null,
-              company: 'SearatesERP (Dubai)',
+              company: 'CargoFlo (Dubai)',
               followerCount: 1,
               activityLog: [{
                 at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
@@ -2740,7 +2747,7 @@ const seedOperationsData = async () => {
             name, paymentType: 'outbound', paymentDate: date,
             journal, paymentMethod: method, partner,
             invoiceNumbers: bills, amount, currency: 'AED', state,
-            company: 'SearatesERP (Dubai)', followerCount: 1,
+            company: 'CargoFlo (Dubai)', followerCount: 1,
             activityLog: [{
               at: new Date(date).toISOString(), author: 'Anix Logistics PVT LTD',
               kind: 'log', body: 'Payment Created', changes: [],
@@ -2829,7 +2836,7 @@ const seedOperationsData = async () => {
       }
 
       if (created.length) {
-        const dubai = await Company.findOne({ where: { code: 'SR-DXB' } });
+        const dubai = await Company.findOne({ where: { code: 'CF-DXB' } });
         const made = await Organization.bulkCreate(created.map((c) => ({
           ...c,
           // An emailish name is a person; anything else reads as a company,
@@ -2837,7 +2844,7 @@ const seedOperationsData = async () => {
           companyType: /@/.test(c.name) ? 'person' : 'company',
           // A partner already carrying invoices has cleared onboarding.
           kycStatus: 'kyc_done',
-          company: dubai?.name || 'SearatesERP (Dubai)',
+          company: dubai?.name || 'CargoFlo (Dubai)',
           currency: 'AED',
           isActive: true,
         })), { individualHooks: false, returning: true });

@@ -49,7 +49,7 @@ const loadForUser = async (userId) => {
 };
 
 // Holding this group is what makes someone an administrator, exactly as in
-// SeaRates — not a role column. That keeps one source of truth: a user with the
+// CargoFlo — not a role column. That keeps one source of truth: a user with the
 // admin role but without this group is still bound by the matrix.
 const SUPERUSER_GROUP = 'Administration / Settings';
 

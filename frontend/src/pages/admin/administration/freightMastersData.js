@@ -1,4 +1,4 @@
-// Static data for "Administration > Freight Masters", mirroring SeaRates ERP's
+// Static data for "Administration > Freight Masters", mirroring CargoFlo ERP's
 // Freight Masters dropdown (Freight Product, Unit of Measures, JSON
 // specifications, transport/cargo/shipment master lists, HAZ section, etc.)
 
@@ -30,7 +30,7 @@ export const FREIGHT_MASTERS_SUBMENU = [
   { key: 'freight-masters/package-info', label: 'Package Info', indent: true },
 ];
 
-// "Freight Product" list + detail records, matching the SeaRates ERP screen
+// "Freight Product" list + detail records, matching the CargoFlo ERP screen
 // (Freight Product / Model / Product Type columns, and a detail view with a
 // "Shipment Matching Rule" card).
 export const FREIGHT_PRODUCTS = [
@@ -87,7 +87,7 @@ export const FREIGHT_PRODUCTS = [
 ];
 
 // "Administration > Freight Masters > Transport Modes" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Transport Mode" screen (Code /
+// detail records, mirroring CargoFlo ERP's "Transport Mode" screen (Code /
 // Name / Mode Type / Active columns, and a detail view with Mode Type radio,
 // Active toggle, and "Allowed For Route" tags).
 export const TRANSPORT_MODES = [
@@ -115,7 +115,7 @@ export const TRANSPORT_MODES = [
 ];
 
 // "Administration > Freight Masters > Shipment Type" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Shipment Type" screen (Code /
+// detail records, mirroring CargoFlo ERP's "Shipment Type" screen (Code /
 // Name / Active columns, and a detail view with Active and "Is Courier
 // Shipment" toggles).
 export const SHIPMENT_TYPES = [
@@ -125,7 +125,7 @@ export const SHIPMENT_TYPES = [
 ];
 
 // "Administration > Freight Masters > Cargo Type" - dedicated list + detail
-// records, mirroring SeaRates ERP's "Cargo Type" screen (grouped by Transport
+// records, mirroring CargoFlo ERP's "Cargo Type" screen (grouped by Transport
 // Mode, with Code / Name / Transport Mode / Active columns, and a detail view
 // with Transport Mode link, Calculated Dimension LWH / Is Package Group /
 // Active / Is Courier Shipment toggles and a "Cargo Sub Type" tab).
@@ -148,7 +148,7 @@ export const CARGO_TYPES = [
 ];
 
 // "Administration > Freight Masters > Consolidation Type" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Consolidation Type" screen
+// detail records, mirroring CargoFlo ERP's "Consolidation Type" screen
 // (Code / Name / Active columns, and a detail view with just an Active
 // toggle).
 export const CONSOLIDATION_TYPES = [
@@ -163,7 +163,7 @@ export const CONSOLIDATION_TYPES = [
 ];
 
 // "Administration > Freight Masters > Service Mode" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Service Mode" screen (Code /
+// detail records, mirroring CargoFlo ERP's "Service Mode" screen (Code /
 // Name / Active columns, and a detail view with an Active toggle and
 // "Summary" / "Configurations" tabs).
 export const SERVICE_MODES = [
@@ -183,7 +183,7 @@ export const SERVICE_MODES = [
 ];
 
 // "Administration > Freight Masters > Container Service Mode" - dedicated
-// list + detail records, mirroring SeaRates ERP's "Container Service Mode"
+// list + detail records, mirroring CargoFlo ERP's "Container Service Mode"
 // screen (Code / Name / Active columns, and a detail view with an Active
 // toggle and a Summary tab).
 export const CONTAINER_SERVICE_MODES = [

@@ -1,5 +1,5 @@
 // Static option lists for the "CFS Tariff > Charges Tariff" create/edit form,
-// mirroring SeaRates ERP's "CFS Tariff Charges / New" screen.
+// mirroring CargoFlo ERP's "CFS Tariff Charges / New" screen.
 
 export const CFS_OPERATIONS = [
   { value: 'import', label: '[IMP] Import' },

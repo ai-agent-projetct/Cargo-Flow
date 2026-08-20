@@ -53,7 +53,7 @@ const CONFIGS = [
     f('name', 'Account Number'), f('code', 'Bank'), f('note', 'Account Holder'),
     f('active', 'Active', 'boolean'),
   ], [
-    { name: '2044050505050', code: 'Abu Dhabi Commercial Bank', note: 'SearatesERP (Dubai)', active: true },
+    { name: '2044050505050', code: 'Abu Dhabi Commercial Bank', note: 'CargoFlo (Dubai)', active: true },
   ]),
 
   generic('add-bank-account', 'Add a Bank Account', [

@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { SERVICE_MODES } from './freightMastersData';
 
 // "Administration > Freight Masters > Service Mode" list, mirroring
-// SeaRates ERP's "Service Mode" screen (drag handle, Code, Name, Active
+// CargoFlo ERP's "Service Mode" screen (drag handle, Code, Name, Active
 // toggle columns). Clicking a row opens its own detail page.
 const ServiceModeList = () => {
   const navigate = useNavigate();

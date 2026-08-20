@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { DOCUMENT_TYPES } from './documentTypeData';
 
 // "Administration > Freight Masters > Document Type" list, mirroring
-// SeaRates ERP's "Document Type" screen: a "Create" button, Document Type /
+// CargoFlo ERP's "Document Type" screen: a "Create" button, Document Type /
 // Related Model / Document Mode / Active columns. Clicking a row opens its
 // detail page.
 const DocumentTypeList = () => {

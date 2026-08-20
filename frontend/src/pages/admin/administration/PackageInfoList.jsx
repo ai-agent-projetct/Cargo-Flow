@@ -4,7 +4,7 @@ import SearchBar from '../../../common/SearchBar';
 import { PACKAGE_INFOS } from './packageInfoData';
 import PackageInfoExportDataModal from './PackageInfoExportDataModal';
 
-// "Administration > Freight Masters > Package Info" list, mirroring SeaRates
+// "Administration > Freight Masters > Package Info" list, mirroring CargoFlo
 // ERP's "Package Info" screen: Code / Kind / Type / Material Code / Material
 // / Category columns, a Download-only toolbar (no Create), row checkboxes
 // with an "N selected" badge + Action dropdown (Export), and an Export Data

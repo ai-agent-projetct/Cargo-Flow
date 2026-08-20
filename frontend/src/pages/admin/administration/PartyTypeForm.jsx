@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PARTY_TYPES, PARTY_TYPE_COLORS } from './partyTypeData';
 
 // "Administration > Freight Masters > Party Type / New" (and "/Edit") form,
-// mirroring SeaRates ERP's Party Type create/edit screen: Name, Code, Is
+// mirroring CargoFlo ERP's Party Type create/edit screen: Name, Code, Is
 // Vendor checkbox, Color swatch picker, "Partner Type Field Line" table with
 // "Add a line", and Save/Discard buttons.
 const PartyTypeForm = () => {

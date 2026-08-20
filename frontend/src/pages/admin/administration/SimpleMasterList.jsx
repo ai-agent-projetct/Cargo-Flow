@@ -7,7 +7,7 @@ import { SIMPLE_MASTER_LISTS } from './freightMastersData';
 // Generic reference-data list used for the remaining "Freight Masters"
 // dropdown items (Unit of Measures, Transport Modes, Cargo Types, HAZ Class,
 // etc.). Each one renders a simple read-only table from static master data,
-// matching the look of SeaRates ERP's settings list screens.
+// matching the look of CargoFlo ERP's settings list screens.
 const SimpleMasterList = () => {
   const params = useParams();
   const slug = params['*'] || '';

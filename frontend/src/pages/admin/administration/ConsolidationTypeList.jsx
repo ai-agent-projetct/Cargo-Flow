@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { CONSOLIDATION_TYPES } from './freightMastersData';
 
 // "Administration > Freight Masters > Consolidation Type" list, mirroring
-// SeaRates ERP's "Consolidation Type" screen (drag handle, Code, Name, Active
+// CargoFlo ERP's "Consolidation Type" screen (drag handle, Code, Name, Active
 // toggle columns). Clicking a row opens its own detail page.
 const ConsolidationTypeList = () => {
   const navigate = useNavigate();

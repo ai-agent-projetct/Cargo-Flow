@@ -4,7 +4,7 @@ import SearchBar from '../../../common/SearchBar';
 import { HAZ_SUB_CLASSES } from './hazSubClassData';
 import HazSubClassExportDataModal from './HazSubClassExportDataModal';
 
-// "Administration > Freight Masters > HAZ Sub Class" list, mirroring SeaRates
+// "Administration > Freight Masters > HAZ Sub Class" list, mirroring CargoFlo
 // ERP's "HAZ Sub Class" screen: Name / HAZ Class columns, a Download-only
 // toolbar (no Create), row checkboxes with an "N selected" badge + Action
 // dropdown (Export), and an Export Data dialog.

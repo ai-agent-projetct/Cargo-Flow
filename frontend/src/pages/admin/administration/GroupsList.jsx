@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Download, X } from 'lucide-react';
 import { GROUP_CATEGORIES, ALL_GROUPS } from './groupsData';
 import ExportDataModal from './ExportDataModal';
 
-// "Companies & Users > Groups" — matches SeaRates ERP's Applications/Groups
+// "Companies & Users > Groups" — matches CargoFlo ERP's Applications/Groups
 // list: groups organized under module category headers (e.g. "Administration
 // (2)"), with checkbox selection, an "Action" menu (Export), and an
 // Export Data dialog with a field picker.

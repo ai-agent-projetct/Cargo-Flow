@@ -14,7 +14,7 @@ const formatNumber = (n) =>
   n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // "Administration > Freight Masters > Volumetric Divided Value" list,
-// mirroring SeaRates ERP's "Volumetric Divided Value" screen: Transport Mode
+// mirroring CargoFlo ERP's "Volumetric Divided Value" screen: Transport Mode
 // / UOM / Pound (toggle) / Divided Value columns, a Create button that
 // inserts an inline-editable row at the top (switching the toolbar to
 // Save/Discard), row checkboxes with an "N selected" badge + Action dropdown

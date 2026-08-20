@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { SHIPMENT_TYPES } from './freightMastersData';
 
 // "Administration > Freight Masters > Shipment Type" list, mirroring
-// SeaRates ERP's "Shipment Type" screen (drag handle, Code, Name, Active
+// CargoFlo ERP's "Shipment Type" screen (drag handle, Code, Name, Active
 // toggle columns). Clicking a row opens its own detail page.
 const ShipmentTypeList = () => {
   const navigate = useNavigate();

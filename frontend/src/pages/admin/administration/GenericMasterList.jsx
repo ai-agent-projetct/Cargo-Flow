@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useParams } from 'react-router-dom';
 import { Plus, Download, Save, X, FileText, Trash2 } from 'lucide-react';
 import { masterDataAPI } from '../../../services/api';
@@ -40,6 +41,12 @@ const GenericMasterList = () => {
   const activeLabel = config.activeLabel || 'Active';
 
   const [data, setData] = useState([]);
+  // Export exactly the columns the table shows.
+  const doExport = () => {
+    if (!exportCsv(data, columns.map((f) => ({ key: f.key, label: f.label })), category || 'master-data')) {
+      toast.error('Nothing to export');
+    } else toast.success(`Exported ${data.length} rows`);
+  };
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
@@ -131,7 +138,7 @@ const GenericMasterList = () => {
               <button onClick={discardCreate} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
                 <X className="w-4 h-4" /> Discard
               </button>
-              <button onClick={() => toast('Export coming soon')} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
+              <button onClick={() => doExport()} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
                 <Download className="w-4 h-4" />
               </button>
             </>
@@ -140,7 +147,7 @@ const GenericMasterList = () => {
               <button onClick={startCreate} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
                 <Plus className="w-4 h-4" /> Create
               </button>
-              <button onClick={() => toast('Export coming soon')} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
+              <button onClick={() => doExport()} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
                 <Download className="w-4 h-4" />
               </button>
             </>

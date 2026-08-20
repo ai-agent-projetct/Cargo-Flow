@@ -60,7 +60,7 @@ const EXPORT_FIELD_TREE = [
 ];
 
 // Recursive node renderer for the "Available fields" tree on the left side of
-// the Export Data modal (mirrors SeaRates ERP's Odoo-style export dialog).
+// the Export Data modal (mirrors CargoFlo ERP's Odoo-style export dialog).
 const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter }) => {
   const fullPath = [...path, node.label];
   const key = fullPath.join(' / ');
@@ -118,7 +118,7 @@ const FieldNode = ({ node, depth, path, expanded, toggleExpand, onAdd, filter })
   );
 };
 
-// "Export Data" dialog for the "Docx Reports" list, mirroring SeaRates ERP /
+// "Export Data" dialog for the "Docx Reports" list, mirroring CargoFlo ERP /
 // Odoo's export-data popup: an "Available fields" tree on the left with the
 // full ir.actions.report field set, a "Fields to export" list on the right
 // (defaults to Report Name, Module) with reordering, an Export Format

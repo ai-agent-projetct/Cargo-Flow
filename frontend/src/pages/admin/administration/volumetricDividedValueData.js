@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Volumetric Divided Value" - dedicated
-// list, mirroring SeaRates ERP's "Volumetric Divided Value" screen: Transport
+// list, mirroring CargoFlo ERP's "Volumetric Divided Value" screen: Transport
 // Mode / UOM / Pound (toggle) / Divided Value columns, an inline "Create"
 // row, a checkbox + "Action > Export" menu, and an "Export Data" dialog.
 export const VOLUMETRIC_DIVIDED_VALUES = [

@@ -77,7 +77,7 @@ const moveAttributesFor = (bill, extra = {}) => {
     lines: items.map((i) => lineFrom(i, currency)),
     ref: bill.notes || null,
     sourceBillId: bill.id,
-    company: 'SearatesERP (Dubai)',
+    company: 'CargoFlo (Dubai)',
     followerCount: 1,
     ...extra,
   };

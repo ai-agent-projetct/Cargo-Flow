@@ -124,7 +124,7 @@ const Header = () => {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {/* Company switcher (admin) - multi-select, mirrors the SeaRates demo */}
+        {/* Company switcher (admin) - multi-select, mirrors the CargoFlo demo */}
         {isAdmin() && companies.length > 0 && (
           <div ref={companyRef} className="relative">
             <button

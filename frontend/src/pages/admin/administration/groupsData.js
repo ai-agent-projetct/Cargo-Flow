@@ -1,5 +1,5 @@
 // Static data describing the "Companies & Users > Groups" list, matching the
-// SeaRates ERP "Applications" (res.groups) view: groups organized under
+// CargoFlo ERP "Applications" (res.groups) view: groups organized under
 // module/category headers, each with a count, e.g. "Administration (2)".
 
 export const GROUP_CATEGORIES = [
@@ -80,7 +80,7 @@ export const ALL_GROUPS = GROUP_CATEGORIES.flatMap((cat) =>
 
 // Representative set of fields available on the underlying "Created by" / "Last
 // Updated by" (res.users) related record, used inside the Export Data modal's
-// field picker, mirroring the field list exported from SeaRates ERP.
+// field picker, mirroring the field list exported from CargoFlo ERP.
 export const USER_RELATED_FIELDS = [
   '# Access Rights', '# Groups', '# Meetings', '# Record Rules', '# Tasks', '# Vendor Bills',
   'Access Token', 'Account Payable', 'Account Receivable', 'Action Needed', 'Active',

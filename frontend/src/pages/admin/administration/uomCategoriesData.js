@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Unit of Measures" data, mirroring
-// SeaRates ERP's "Units of Measure Categories" screen: each category lists
+// CargoFlo ERP's "Units of Measure Categories" screen: each category lists
 // its UoMs as chips, with the reference/active UoM highlighted.
 
 export const UOM_CATEGORIES = [

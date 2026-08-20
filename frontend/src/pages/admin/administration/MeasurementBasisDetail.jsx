@@ -6,7 +6,7 @@ import { TRANSPORT_MODES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Measurement Basis / Name" detail view,
-// mirroring SeaRates ERP: breadcrumb with record pagination (N/12, with
+// mirroring CargoFlo ERP: breadcrumb with record pagination (N/12, with
 // prev/next chevrons), an "Action" dropdown (Archive + Confirmation popup),
 // Name, "Is Job Measurement" toggle, Transport Mode tags, and Package Group.
 const MeasurementBasisDetail = () => {

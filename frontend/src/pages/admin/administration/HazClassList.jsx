@@ -4,7 +4,7 @@ import SearchBar from '../../../common/SearchBar';
 import { HAZ_CLASSES } from './hazClassData';
 import HazClassExportDataModal from './HazClassExportDataModal';
 
-// "Administration > Freight Masters > HAZ Class" list, mirroring SeaRates
+// "Administration > Freight Masters > HAZ Class" list, mirroring CargoFlo
 // ERP's "HAZ Class" screen: Name / Description columns, a Download-only
 // toolbar (no Create), row checkboxes with an "N selected" badge + Action
 // dropdown (Export), and an Export Data dialog.

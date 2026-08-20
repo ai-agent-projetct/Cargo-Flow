@@ -86,7 +86,7 @@ export const SCHEMA = {
           secret('inttra_client_secret', 'INTTRA Client Secret'),
         ],
       },
-      extra: [bool('searates_schedule_enabled', 'Searates Sailing Schedule', 'Enable Fetching realtime Sea Sailing Schedule')],
+      extra: [bool('cargoflo_schedule_enabled', 'CargoFlo Sailing Schedule', 'Enable Fetching realtime Sea Sailing Schedule')],
     },
   ],
 
@@ -162,9 +162,9 @@ export const SCHEMA = {
       fields: [
         bool('shipment_tracking_enabled', 'Shipment/Container Tracking', 'Enable to track shipment for shipment / container'),
         radio('tracking_provider', 'Provider', [
-          { key: 'cargoes', label: 'Cargoes Tracking' }, { key: 'searates', label: 'Searates Tracking' },
+          { key: 'cargoes', label: 'Cargoes Tracking' }, { key: 'cargoflo', label: 'CargoFlo Tracking' },
         ]),
-        secret('searates_product_key', 'Searates Product Key'),
+        secret('cargoflo_product_key', 'CargoFlo Product Key'),
         num('tracking_update_frequency_hours', 'Auto Minimum update frequency', 'hours'),
       ],
     },

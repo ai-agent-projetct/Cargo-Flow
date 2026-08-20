@@ -139,7 +139,8 @@ const CFSReceiptDetail = () => {
 
   const handlePrint = () => {
     setShowActionMenu(false);
-    toast('Print – coming soon', { icon: '🖨️' });
+    // Render the current record through the browser's print dialog.
+    window.print();
   };
 
   const buildPayload = () => {
@@ -290,7 +291,7 @@ const CFSReceiptDetail = () => {
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Company</label>
-              <input className={inputClass} value="SearatesERP (Dubai)" disabled />
+              <input className={inputClass} value="CargoFlo (Dubai)" disabled />
             </div>
             <div>
               <label className={labelClass}>Shipment Type</label>

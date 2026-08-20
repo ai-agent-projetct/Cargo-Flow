@@ -5,7 +5,7 @@ import { SHIPMENT_TYPES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Shipment Type / [CODE] Name" detail
-// view, mirroring SeaRates ERP: breadcrumb with record pagination (1/3, with
+// view, mirroring CargoFlo ERP: breadcrumb with record pagination (1/3, with
 // prev/next chevrons), an "Action" dropdown (Archive + Confirmation popup),
 // Name, Code, Active toggle, "Is Courier Shipment" toggle, and a Summary
 // notes tab.

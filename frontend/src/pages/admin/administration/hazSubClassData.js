@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > HAZ Sub Class" - dedicated list,
-// mirroring SeaRates ERP's "HAZ Sub Class" screen: Name / HAZ Class columns,
+// mirroring CargoFlo ERP's "HAZ Sub Class" screen: Name / HAZ Class columns,
 // Download-only toolbar (no Create), a checkbox + "Action > Export" menu, and
 // an "Export Data" dialog.
 export const HAZ_SUB_CLASSES = [

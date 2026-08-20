@@ -240,7 +240,7 @@ CFSDelivery.belongsTo(FFJob, { foreignKey: 'ffJobId', as: 'ffJob' });
 OCRDocument.belongsTo(FFJob, { foreignKey: 'ffJobId', as: 'ffJob' });
 
 // Child address records (Invoice/Delivery/Other Address) hang off their parent
-// organization, matching the Addresses tab on the SeaRates form.
+// organization, matching the Addresses tab on the CargoFlo form.
 Organization.hasMany(Organization, { foreignKey: 'parentId', as: 'addresses' });
 Organization.belongsTo(Organization, { foreignKey: 'parentId', as: 'parent' });
 ShipmentSharing.belongsTo(FFJob, { foreignKey: 'ffJobId', as: 'ffJob' });

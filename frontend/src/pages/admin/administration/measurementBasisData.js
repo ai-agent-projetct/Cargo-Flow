@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Measurement Basis" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Measurement Basis" screen (Name
+// detail records, mirroring CargoFlo ERP's "Measurement Basis" screen (Name
 // / Transport Mode / Package Group / Is Job Measurement / Is Slab Based /
 // Active columns, and a detail view with an Action > Archive option).
 export const MEASUREMENT_BASES = [

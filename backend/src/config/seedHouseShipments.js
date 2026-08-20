@@ -1,7 +1,7 @@
-// One-off seed script: populates ff_jobs with the 49 real SeaRates demo
+// One-off seed script: populates ff_jobs with the 49 real CargoFlo demo
 // House Shipment records (sourced from field.txt / HouseShipments.jsx RAW_JOBS)
 // so the live House Shipment list shows the same grouped counts as the
-// SeaRates demo Kanban board.
+// CargoFlo demo Kanban board.
 //
 // Run with: node src/config/seedHouseShipments.js
 
@@ -27,7 +27,7 @@ const JOB_TYPE_MAP = {
   RAIL: 'RAIL_FREIGHT',
 };
 
-// Real House Shipment records sourced from the SeaRates Tech demo export, grouped by status
+// Real House Shipment records sourced from the CargoFlo Tech demo export, grouped by status
 const RAW_JOBS = [
   // Created
   { jobNumber: 'SEA-E-FCL-H-N-2026-01851', hblNumber: '', status: 'created', origin: 'Ubungo', destination: 'Escàs', customer: 'Atharva', shipper: 'accounts-us@ila-global.net', consignee: 'admin-us@ila-global.net', revenue: { estReceivable: 110, actReceivable: 0, estPayable: 0, actPayable: 0, estMargin: 110, actMargin: 0 } },

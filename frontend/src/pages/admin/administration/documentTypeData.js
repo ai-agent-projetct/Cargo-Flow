@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Document Type" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Document Type" screen (Document
+// detail records, mirroring CargoFlo ERP's "Document Type" screen (Document
 // Type / Related Model / Document Mode / Active columns, and a detail view
 // with Related Model link and Document Mode).
 export const DOCUMENT_TYPES = [

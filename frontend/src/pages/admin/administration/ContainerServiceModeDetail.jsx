@@ -5,7 +5,7 @@ import { CONTAINER_SERVICE_MODES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Container Service Mode / [CODE] Name"
-// detail view, mirroring SeaRates ERP: breadcrumb with record pagination
+// detail view, mirroring CargoFlo ERP: breadcrumb with record pagination
 // (1/5, with prev/next chevrons), an "Action" dropdown (Archive +
 // Confirmation popup), Name, Code, Active toggle, and a Summary notes tab.
 const ContainerServiceModeDetail = () => {

@@ -4,7 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import { DOCUMENT_TYPES, DOCUMENT_MODE_OPTIONS, RELATED_MODEL_OPTIONS } from './documentTypeData';
 
 // "Administration > Freight Masters > Document Type / New" (and "/Edit")
-// form, mirroring SeaRates ERP's Document Type create/edit screen: Document
+// form, mirroring CargoFlo ERP's Document Type create/edit screen: Document
 // Type input, Related Model + Related Template dropdowns, Document Mode
 // dropdown, and Save/Discard buttons.
 //

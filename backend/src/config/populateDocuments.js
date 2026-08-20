@@ -1,6 +1,6 @@
 // One-off script: populates the `documents` JSON field on every existing
 // ff_jobs record with the 15 standard "Shipment Document" entries observed
-// on the live SeaRates demo (demo.searates.tech) Documents smart button —
+// on the live CargoFlo demo (demo.cargoflo.tech) Documents smart button —
 // 4 IN docs + 11 OUT docs, grouped by `mode`.
 //
 // Run with: node src/config/populateDocuments.js

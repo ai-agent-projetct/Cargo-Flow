@@ -5,7 +5,7 @@ import { EVENT_TYPES } from './eventTypeData';
 import OperationWarningModal from './OperationWarningModal';
 
 // "Administration > Freight Masters > Event Type / [CODE] Name" detail view,
-// mirroring SeaRates ERP: breadcrumb with record pagination (1/N, with
+// mirroring CargoFlo ERP: breadcrumb with record pagination (1/N, with
 // prev/next chevrons), an "Edit" button, an "Action" dropdown with only
 // "Duplicate" (which surfaces the standard Odoo "Warning" dialog), Event
 // Name, Event Code, Public Visible toggle, and a "Summary" tab.

@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 // "Organizations" - the partner master (customers, shippers, consignees,
-// carriers, agents). Mirrors the SeaRates Organizations form, which switches
+// carriers, agents). Mirrors the CargoFlo Organizations form, which switches
 // between an Individual and a Company layout via `companyType`.
 const Organization = sequelize.define('Organization', {
   id: {

@@ -5,7 +5,7 @@ import { FREIGHT_SHIPMENT_TAGS } from './freightShipmentTagData';
 import TagExportDataModal from './TagExportDataModal';
 
 // "Administration > Freight Masters > Freight Shipment Tag" list, mirroring
-// SeaRates ERP's "Freight Shipment Tag" screen: single "Name" column,
+// CargoFlo ERP's "Freight Shipment Tag" screen: single "Name" column,
 // Create button that inserts an inline-editable row at the top (with an "EN"
 // translation badge, switching the toolbar to Save/Discard), row checkboxes
 // with an "N selected" badge + Action dropdown (Export/Archive/Unarchive),

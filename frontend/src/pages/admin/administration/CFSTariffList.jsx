@@ -6,7 +6,7 @@ import SearchBar from '../../../common/SearchBar';
 import LoadingSpinner from '../../../common/LoadingSpinner';
 import { operationLabel } from './cfsTariffData';
 
-// "Administration > CFS Tariff > Charges Tariff" list, mirroring SeaRates
+// "Administration > CFS Tariff > Charges Tariff" list, mirroring CargoFlo
 // ERP's "CFS Tariff Charges" screen (Tariff Name, Shipping Line, Operation,
 // Valid From, Valid to).
 const CFSTariffList = () => {

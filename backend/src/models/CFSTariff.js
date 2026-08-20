@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-// "Administration > CFS Tariff > Charges Tariff" in SeaRates ERP. Each record
+// "Administration > CFS Tariff > Charges Tariff" in CargoFlo ERP. Each record
 // can be a Buy Tariff or Sell Tariff and carries an editable Charges grid
 // (Charges, Tariff Base, Measurement Type, Unit Price, Currency, Valid From/To).
 const CFSTariff = sequelize.define('CFSTariff', {

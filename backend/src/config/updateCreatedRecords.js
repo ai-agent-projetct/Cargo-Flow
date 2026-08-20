@@ -1,6 +1,6 @@
 // One-off script: updates the first 5 "Created" House Shipment records
 // (seeded by seedHouseShipments.js) with the exact field values shown on
-// the live SeaRates demo (demo.searates.tech) for those records —
+// the live CargoFlo demo (demo.cargoflo.tech) for those records —
 // incoterm, service mode, sales agent, responsible, ports, weights, etc.
 //
 // Run with: node src/config/updateCreatedRecords.js
@@ -32,10 +32,10 @@ const run = async () => {
   await connectDB();
 
   // Sales agents / responsible users seen on the demo
-  const gaurav = await getOrCreateUser('Gaurav Lashkari', 'gaurav.lashkari@searateserp.com');
-  const moneesh = await getOrCreateUser('Moneesh (Tech Support)', 'moneesh.techsupport@searateserp.com');
-  const syed = await getOrCreateUser('Syed (Tech Support)', 'syed.techsupport@searateserp.com');
-  const mohd = await getOrCreateUser('Mohd (Tech Support)', 'mohd.techsupport@searateserp.com');
+  const gaurav = await getOrCreateUser('Gaurav Lashkari', 'gaurav.lashkari@cargoflo.com');
+  const moneesh = await getOrCreateUser('Moneesh (Tech Support)', 'moneesh.techsupport@cargoflo.com');
+  const syed = await getOrCreateUser('Syed (Tech Support)', 'syed.techsupport@cargoflo.com');
+  const mohd = await getOrCreateUser('Mohd (Tech Support)', 'mohd.techsupport@cargoflo.com');
 
   // Ports seen on the demo
   const khorAlFakkan = await getOrCreatePort({ code: 'AEKLF', name: 'KHOR AL FAKKAN', city: 'Khor Al Fakkan', country: 'United Arab Emirates', countryCode: 'AE' });

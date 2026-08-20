@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Product JSON Specifications" and
-// "FIATA eBL Json Specifications" data, mirroring SeaRates ERP. Some records
+// "FIATA eBL Json Specifications" data, mirroring CargoFlo ERP. Some records
 // are restricted to specific departments/groups - clicking them shows the
 // same "Warning" access-denied dialog as the live ERP (the access rights for
 // each row are visible to admins on the User panel under Departments/Groups).
@@ -17,8 +17,8 @@ export const PRODUCT_JSON_SPECS = {
       restrictedResource: "'JSON Specification Dependency' (product.json.specification.dependency)",
       allowedGroups: FREIGHT_TECH_SUPPORT_GROUPS,
     },
-    { displayName: 'Air Searates Tracking', model: 'Master Shipment' },
-    { displayName: 'Sea Searates Tracking', model: 'Master Shipment' },
+    { displayName: 'Air CargoFlo Tracking', model: 'Master Shipment' },
+    { displayName: 'Sea CargoFlo Tracking', model: 'Master Shipment' },
     { displayName: 'Parcel Tracking', model: 'Freight Service Job' },
     { displayName: 'transportation_spec', model: 'House Shipment Transportation Details' },
     { displayName: 'part_bl_specs', model: 'House Shipment Part BL' },

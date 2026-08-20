@@ -1,7 +1,7 @@
 // One-off script: sets the exact creation date/time, activity log entry
 // ("House Shipment created" by the responsible user) and document
 // upload timestamps for the 5 "Created" House Shipment records that were
-// matched against the live SeaRates demo screenshots.
+// matched against the live CargoFlo demo screenshots.
 //
 // Run with: node src/config/updateCreatedRecordsTimestamps.js
 

@@ -1,5 +1,5 @@
 // "Administration > Document Reports > Docx Reports" - dedicated list +
-// detail records, mirroring SeaRates ERP's "Docx Report Template" screen
+// detail records, mirroring CargoFlo ERP's "Docx Report Template" screen
 // (Report Name / Module columns, and a detail view with Module / Output
 // Type / Active / Template (.docx) / Allowed Companies / Data
 // Representation / Show Wizard fields plus "Excel Document Usage" and

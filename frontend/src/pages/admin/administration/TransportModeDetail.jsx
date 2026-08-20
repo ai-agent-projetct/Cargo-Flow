@@ -5,7 +5,7 @@ import { TRANSPORT_MODES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Transport Modes / [CODE] Name" detail
-// view, mirroring SeaRates ERP: breadcrumb with record pagination (1/3, with
+// view, mirroring CargoFlo ERP: breadcrumb with record pagination (1/3, with
 // prev/next chevrons), an "Action" dropdown (Archive), Name, Code, Mode Type
 // radio (Sea/Land/Air), Active toggle, "Allowed For Route" tags, and a
 // Summary notes tab.

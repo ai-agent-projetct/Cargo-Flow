@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Freight Shipment Tag" - dedicated
-// list, mirroring SeaRates ERP's "Freight Shipment Tag" screen: a single
+// list, mirroring CargoFlo ERP's "Freight Shipment Tag" screen: a single
 // "Name" column, inline "Create" row, multi-select Action menu
 // (Export / Archive / Unarchive), and an "Export Data" dialog.
 export const FREIGHT_SHIPMENT_TAGS = [

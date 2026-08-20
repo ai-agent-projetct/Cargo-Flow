@@ -157,7 +157,7 @@ const UserDetail = ({ basePath = '/admin/administration/users' }) => {
   const handleSendPasswordReset = async () => {
     try {
       const fakeToken = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      setResetLink(`https://demo.searates.tech/web/reset_password?db=demo-db&token=${fakeToken}`);
+      setResetLink(`https://demo.cargoflo.tech/web/reset_password?db=demo-db&token=${fakeToken}`);
       toast.success('Password reset instructions sent');
     } catch {
       toast.error('Failed to send reset instructions');

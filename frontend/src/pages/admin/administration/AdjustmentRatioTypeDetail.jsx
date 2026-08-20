@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ADJUSTMENT_RATIO_TYPES } from './adjustmentRatioTypeData';
 
 // "Administration > Freight Masters > Adjustment Ratio Type / Name" detail
-// view, mirroring SeaRates ERP: breadcrumb with record pagination (N/Total,
+// view, mirroring CargoFlo ERP: breadcrumb with record pagination (N/Total,
 // with prev/next chevrons), Name (large title), and a read-only "Is Package
 // Group" toggle. No Edit/Action controls in this read-only screen.
 const AdjustmentRatioTypeDetail = () => {

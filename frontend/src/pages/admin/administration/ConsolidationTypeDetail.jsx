@@ -5,7 +5,7 @@ import { CONSOLIDATION_TYPES } from './freightMastersData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Consolidation Type / [CODE] Name"
-// detail view, mirroring SeaRates ERP: breadcrumb with record pagination
+// detail view, mirroring CargoFlo ERP: breadcrumb with record pagination
 // (1/8, with prev/next chevrons), an "Action" dropdown (Archive +
 // Confirmation popup), Name, Code, Active toggle, and a Summary notes tab.
 const ConsolidationTypeDetail = () => {

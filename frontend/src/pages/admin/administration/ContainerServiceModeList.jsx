@@ -5,7 +5,7 @@ import SearchBar from '../../../common/SearchBar';
 import { CONTAINER_SERVICE_MODES } from './freightMastersData';
 
 // "Administration > Freight Masters > Container Service Mode" list,
-// mirroring SeaRates ERP's "Container Service Mode" screen (drag handle,
+// mirroring CargoFlo ERP's "Container Service Mode" screen (drag handle,
 // Code, Name, Active toggle columns). Clicking a row opens its own detail
 // page.
 const ContainerServiceModeList = () => {

@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Adjustment Ratio Type" - dedicated
-// list + detail records, mirroring SeaRates ERP's "Adjustment Ratio Type"
+// list + detail records, mirroring CargoFlo ERP's "Adjustment Ratio Type"
 // screen (Name / Is Package Group columns, and a read-only detail view).
 export const ADJUSTMENT_RATIO_TYPES = [
   { name: 'Weight', isPackageGroup: true },

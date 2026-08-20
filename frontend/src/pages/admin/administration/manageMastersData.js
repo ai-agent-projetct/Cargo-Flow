@@ -54,7 +54,7 @@ export const MANAGE_SUBMENU = [
 // fields to show as columns (and as inputs on the inline create row).
 // Each field maps to one of the underlying record columns: code, name,
 // extra, extra2. `key: 'isActive'` renders the Active toggle.
-// Verified against the live SeaRates demo (Administration > Manage):
+// Verified against the live CargoFlo demo (Administration > Manage):
 //  - Container Category: single "Category Name" column (no code).
 //  - Countries: "Country Name" then "Country Code" (no extra/currency).
 //  - Vessel: Code, Vessel Name, IMO Number, MMSI Number.

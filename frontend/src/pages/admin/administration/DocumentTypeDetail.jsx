@@ -5,7 +5,7 @@ import { DOCUMENT_TYPES } from './documentTypeData';
 import ArchiveConfirmModal from './ArchiveConfirmModal';
 
 // "Administration > Freight Masters > Document Type / Name" detail view,
-// mirroring SeaRates ERP: breadcrumb with record pagination (1/33, with
+// mirroring CargoFlo ERP: breadcrumb with record pagination (1/33, with
 // prev/next chevrons), "Edit" button, an "Action" dropdown (Archive +
 // Confirmation popup, and Duplicate), Document Type, Related Model link, and
 // Document Mode.

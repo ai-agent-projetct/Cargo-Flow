@@ -2,7 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { usePermissions } from '../context/PermissionContext';
 
-// The ERP's access-denied dialog, wording and layout matching SeaRates:
+// The ERP's access-denied dialog, wording and layout matching CargoFlo:
 //
 //   Warning
 //   Due to security restrictions, you are not allowed to access

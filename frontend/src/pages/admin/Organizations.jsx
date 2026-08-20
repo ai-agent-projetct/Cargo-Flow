@@ -5,7 +5,7 @@ import { organizationsAPI } from '../../services/api';
 import { PageLoader } from '../../common/LoadingSpinner';
 import { partyTypeClass } from './organization/constants';
 
-// Columns mirror the live SeaRates Organizations list view.
+// Columns mirror the live CargoFlo Organizations list view.
 const COLUMNS = ['Name', 'Phone', 'Email', 'Salesperson', 'Activities', 'City', 'State', 'Country', 'Identification Number', 'Tags', 'Company'];
 
 // Search-view filters, matching the demo's Filters menu.

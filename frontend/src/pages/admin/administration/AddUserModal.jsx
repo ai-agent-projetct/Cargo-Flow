@@ -85,7 +85,7 @@ const AddUserModal = ({ isOpen, onClose, onCreated, defaultCompanyId }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-xl font-bold text-blue-600">SearatesERP</h2>
+          <h2 className="text-xl font-bold text-blue-600">CargoFlo</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
         </div>
 

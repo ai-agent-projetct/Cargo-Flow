@@ -6,7 +6,7 @@ import SearchBar from '../../../common/SearchBar';
 import LoadingSpinner from '../../../common/LoadingSpinner';
 
 // Shared list view for "Sell Tariff" and "Buy Tariff" under
-// Administration > Tariff, mirroring SeaRates ERP's list columns.
+// Administration > Tariff, mirroring CargoFlo ERP's list columns.
 const TariffList = ({ tariffType, basePath }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);

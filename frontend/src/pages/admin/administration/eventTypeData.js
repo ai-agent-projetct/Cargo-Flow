@@ -1,5 +1,5 @@
 // "Administration > Freight Masters > Event Type" - dedicated list + detail
-// records, mirroring SeaRates ERP's "Event Type" screen (Event Code / Event
+// records, mirroring CargoFlo ERP's "Event Type" screen (Event Code / Event
 // Name columns, Create button, and a detail/edit view with Event Name /
 // Event Code / Public Visible toggle and a Summary tab).
 export const EVENT_TYPES = [

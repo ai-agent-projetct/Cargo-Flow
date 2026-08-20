@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FREIGHT_PRODUCTS } from './freightMastersData';
 
 // "Administration > Freight Masters > Freight Product / <name> (<model>)"
-// detail view, mirroring SeaRates ERP: a breadcrumb-style header with
+// detail view, mirroring CargoFlo ERP: a breadcrumb-style header with
 // record-number pagination (1/4, with previous/next chevrons cycling through
 // all Freight Products), a "Shipment Matching Rule" card showing the
 // rule conditions and matched record count, and a "Summary" notes tab.

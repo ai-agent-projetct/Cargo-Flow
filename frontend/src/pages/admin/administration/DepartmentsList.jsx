@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Building2 } from 'lucide-react';
 import { departmentsAPI } from '../../../services/api';
@@ -12,6 +13,10 @@ const PAGE_SIZE = 80;
 const DepartmentsList = () => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
+  const doExport = () => {
+    if (!exportCsv(data, [], 'departments')) toast.error('Nothing to export');
+    else toast.success(`Exported ${data.length} rows`);
+  };
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -57,7 +62,7 @@ const DepartmentsList = () => {
           >
             <Plus className="w-4 h-4" /> Create
           </button>
-          <button onClick={() => toast('Export coming soon')} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
+          <button onClick={() => doExport()} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
             <Download className="w-4 h-4" />
           </button>
         </div>

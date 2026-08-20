@@ -1,5 +1,5 @@
 // Field definitions for the "Export Data" modal on CFS Receive/Delivery Entry
-// list pages - mirrors the large "Available fields" picker used by SeaRates
+// list pages - mirrors the large "Available fields" picker used by CargoFlo
 // ERP (Odoo-style export). Each field maps to a value getter so the export
 // works for every record; fields we don't store locally export empty values.
 
@@ -448,7 +448,7 @@ export const CFS_RECEIPT_EXPORT_FIELDS = [
   { key: 'relatedDocumentID', label: "Related Document ID", get: () => '' },
   { key: 'requestingPartner', label: "Requesting Partner", get: () => '' },
   { key: 'barcode', label: "Barcode", get: () => '' },
-  { key: 'company', label: "Company", get: () => 'SearatesERP (Dubai)' },
+  { key: 'company', label: "Company", get: () => 'CargoFlo (Dubai)' },
   { key: 'partyTypes', label: "Party Types", get: () => '' },
   { key: 'securityToken', label: "Security Token", get: () => '' },
   { key: 'summary', label: "Summary", get: () => '' },
@@ -2162,7 +2162,7 @@ export const CFS_RECEIPT_EXPORT_FIELDS = [
   { key: 'place', label: "Place", get: () => '' },
   { key: 'publicTrackingEvent', label: "Public Tracking Event", get: () => '' },
   { key: 'scheduledCheckTime', label: "Scheduled Check Time", get: () => '' },
-  { key: 'searatesTrackingEvent', label: "Searates Tracking Event", get: () => '' },
+  { key: 'cargofloTrackingEvent', label: "CargoFlo Tracking Event", get: () => '' },
   { key: 'account', label: "Account", get: () => '' },
   { key: 'accountGroup', label: "Account group", get: () => '' },
   { key: 'accountLineDoc', label: "Account Line Doc", get: () => '' },

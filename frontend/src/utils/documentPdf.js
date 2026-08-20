@@ -30,7 +30,7 @@ export const buildDocumentPdf = (doc, form, ctx = {}) => {
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 64, 175);
-  pdf.text('SEARATESERP', margin, y + 14);
+  pdf.text('CARGOFLO', margin, y + 14);
   pdf.setFontSize(8);
   pdf.setTextColor(120, 120, 120);
   pdf.setFont('helvetica', 'normal');
@@ -122,7 +122,7 @@ export const buildDocumentPdf = (doc, form, ctx = {}) => {
   pdf.setFontSize(8);
   pdf.setTextColor(90, 90, 90);
   const terms = form.termsAndConditions ||
-    'This document is generated electronically by SearatesERP and is subject to the standard terms ' +
+    'This document is generated electronically by CargoFlo and is subject to the standard terms ' +
     'and conditions of carriage. All cargo is handled in accordance with applicable laws and ' +
     'regulations. Please verify all details before use.';
   const lines = pdf.splitTextToSize(terms, pageWidth - margin * 2);

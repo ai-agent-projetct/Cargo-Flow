@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Paperclip, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// "Send Mail (booking)" dialog, mirroring SeaRates ERP / Odoo's mass-mailing
+// "Send Mail (booking)" dialog, mirroring CargoFlo ERP / Odoo's mass-mailing
 // composer opened from a record's "Action" menu: From / Recipients / CC /
 // Subject / Replies (radio) / message body / Attach a file, with a "booking"
 // mail template selector and Send / Cancel / Save as new template actions.

@@ -130,7 +130,7 @@ const PRODUCTS = [
   ['', 'MXAF-EXPO', 1, [], []],
   ['', 'Terminal Handling Charges', 400, [], []],
   ['', 'ABC', 1, [], []],
-  ['SearatesERP(China)-AF', 'ADMIN FEE', 1, [], []],
+  ['CargoFlo (China)-AF', 'ADMIN FEE', 1, [], []],
   ['', 'Air carriage', 1, [], []],
   ['', 'Air carriage', 1, ['VAT 5% (Dubai)'], ['VAT 5%']],
   ['', 'All inclusive', 60000, [], []],
