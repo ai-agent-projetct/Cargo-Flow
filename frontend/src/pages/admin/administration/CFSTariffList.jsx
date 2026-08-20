@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, FileText, ChevronLeft, SlidersHorizontal } from 'lucide-react';
 import { cfsTariffsAPI } from '../../../services/api';
@@ -41,6 +42,9 @@ const CFSTariffList = () => {
     return dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
   };
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(filtered, { key: 'cfs-tariffs', groupFields: [] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -64,9 +68,7 @@ const CFSTariffList = () => {
 
           <div className="flex items-center gap-2">
             <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
             <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
             <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
             <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 border border-slate-200"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
@@ -96,7 +98,7 @@ const CFSTariffList = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((item) => (
+                {listView.rows.map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-slate-50 cursor-pointer"

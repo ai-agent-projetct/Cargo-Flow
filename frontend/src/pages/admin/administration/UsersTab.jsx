@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Users as UsersIcon } from 'lucide-react';
 import { usersAPI } from '../../../services/api';
@@ -38,6 +39,9 @@ const UsersTab = ({ basePath = '/admin/administration/users' }) => {
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(data, { key: 'users', groupFields: [{ key: 'role', label: 'Role' }, { key: 'status', label: 'Status' }] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -59,9 +63,7 @@ const UsersTab = ({ basePath = '/admin/administration/users' }) => {
         <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search users..." className="max-w-md" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
           </div>
           {total > 0 && (
             <p className="text-xs text-slate-500">{from}-{to}/{total}</p>
@@ -91,7 +93,7 @@ const UsersTab = ({ basePath = '/admin/administration/users' }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {data.map((user) => (
+                {listView.rows.map((user) => (
                   <tr
                     key={user.id}
                     className="hover:bg-slate-50 cursor-pointer"

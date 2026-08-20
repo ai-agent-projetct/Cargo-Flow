@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { exportCsv } from '../../../utils/exportCsv';
 import { Plus, Download, Save, X, FileText } from 'lucide-react';
 import { incotermsAPI } from '../../../services/api';
@@ -94,6 +95,9 @@ const IncotermsList = () => {
 
   const total = filtered.length + (creating ? 1 : 0);
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(filtered, { key: 'incoterms', groupFields: [] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -128,9 +132,7 @@ const IncotermsList = () => {
         <SearchBar value={search} onChange={setSearch} placeholder="Search incoterms..." className="max-w-md" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
           </div>
           <p className="text-xs text-slate-500">1-{total}/{total}</p>
         </div>
@@ -154,7 +156,7 @@ const IncotermsList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map((item) => (
+              {listView.rows.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-900">{item.code}</td>
                   <td className="px-4 py-3 text-slate-600">{item.name}</td>

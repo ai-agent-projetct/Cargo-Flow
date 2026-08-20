@@ -8,6 +8,7 @@ import {
 import { accountingAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
+import { useListToolbar } from './useListToolbar';
 
 const PAGE_SIZE = 80;
 
@@ -40,6 +41,24 @@ const ProFormaList = () => {
   const [meta, setMeta] = useState({ total: 0, totals: { taxes: 0, total: 0 } });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // Export / Favorites / column toggle, shared with the other accounting lists.
+  const toolbar = useListToolbar({
+    key: 'pro-forma',
+    rows: rows,
+    columns: COLUMNS,
+    exportSpec: [
+      { key: 'customer', label: 'Customer' },
+      { key: 'name', label: 'Number' },
+      { key: 'serviceJobRefs', label: 'Service Jobs' },
+      { key: 'houseShipmentRefs', label: 'House Shipment' },
+      { key: 'companyCurrency', label: 'Company Currency' },
+      { key: 'taxes', label: 'Taxes' },
+      { key: 'total', label: 'Total' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'state', label: 'State' },
+    ],
+  });
   const [search, setSearch] = useState('');
   const [facets, setFacets] = useState({ states: [], customers: [] });
   const [filters, setFilters] = useState([]);
@@ -138,7 +157,7 @@ const ProFormaList = () => {
               <Plus className="w-4 h-4" /> Create
             </button>
           )}
-          <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+          <button onClick={toolbar.onExport} className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
             <Download className="w-4 h-4" />
           </button>
         </div>
@@ -188,8 +207,26 @@ const ProFormaList = () => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-          <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+          <button onClick={() => toolbar.toggleFavorite({ search })}
+            className={`flex items-center gap-1 hover:text-gray-900 ${toolbar.favorite ? 'text-amber-500' : ''}`}>
+            <Star className={`w-3.5 h-3.5 ${toolbar.favorite ? 'fill-amber-400' : ''}`} /> Favorites
+          </button>
+          <div className="relative">
+            <button onClick={() => toolbar.setColsOpen(!toolbar.colsOpen)} title="Toggle columns"
+              className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {toolbar.colsOpen && (
+              <div className="absolute right-0 top-7 z-20 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase">Columns</div>
+                {COLUMNS.map((c) => (
+                  <label key={c} className="flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300"
+                      checked={!toolbar.hidden.includes(c)} onChange={() => toolbar.toggleColumn(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-xs">
             <span>{from}-{to} / {total}</span>

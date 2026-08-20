@@ -9,6 +9,7 @@ import { accountingAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
 import { fmtDate, money } from './constants';
+import { useListToolbar } from './useListToolbar';
 
 const PAGE_SIZE = 80;
 
@@ -42,6 +43,22 @@ const PaymentList = ({ menu = 'payments', title, method }) => {
   const [meta, setMeta] = useState({ total: 0, totals: { amount: 0 } });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  // Export / Favorites / column toggle, shared with the other accounting lists.
+  const toolbar = useListToolbar({
+    key: vendor ? 'vendor-payments' : 'payments',
+    rows,
+    columns: COLUMNS,
+    exportSpec: [
+      { key: 'paymentDate', label: 'Date' },
+      { key: 'name', label: 'Number' },
+      { key: 'journal', label: 'Journal' },
+      { key: 'paymentMethod', label: 'Payment Method' },
+      { key: 'partner', label: vendor ? 'Vendor' : 'Customer' },
+      { key: 'invoiceNumbers', label: vendor ? 'Bill Number' : 'Invoice Number' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'state', label: 'Status' },
+    ],
+  });
   const [search, setSearch] = useState('');
   const [facets, setFacets] = useState({ journals: [], methods: [], states: [] });
   const [filters, setFilters] = useState([]);
@@ -109,34 +126,41 @@ const PaymentList = ({ menu = 'payments', title, method }) => {
   const to = Math.min(page * PAGE_SIZE, total);
   const toggle = (k) => setFilters((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
 
+  const shown = COLUMNS.filter((c) => !toolbar.hidden.includes(c));
+
+  // Cells are keyed by their column label so the column toggle can drop a
+  // column and its cells together without shifting the row out of line.
   const Row = (r) => {
     const draft = r.state === 'draft';
+    const txt = draft ? 'text-blue-700' : 'text-gray-700';
+    const cells = {
+      Date: <span className={`text-xs ${txt}`}>{fmtDate(r.paymentDate)}</span>,
+      Number: <span className={`text-xs font-semibold ${draft ? 'text-blue-700' : 'text-gray-900'}`}>{r.name}</span>,
+      Journal: <span className="text-xs text-gray-700">{r.journal}</span>,
+      'Payment Method': <span className="text-xs text-gray-700">{r.paymentMethod}</span>,
+      [vendor ? 'Vendor' : 'Customer']: <span className="text-xs text-gray-800" title={r.partner}>{r.partner}</span>,
+      [vendor ? 'Bill Number' : 'Invoice Number']: (
+        <span className="text-xs text-gray-700" title={(r.invoiceNumbers || []).join(', ')}>
+          {(r.invoiceNumbers || []).join(', ')}
+        </span>
+      ),
+      Amount: <span className="text-xs font-semibold text-gray-900">{money(r.amount, r.currency)}</span>,
+      Status: (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${PSTATE_PILL[r.state]}`}>
+          {PSTATE[r.state]}
+        </span>
+      ),
+    };
     return (
       <tr key={r.id} onClick={() => navigate(`${base}/${r.id}`)} className="hover:bg-gray-50 cursor-pointer">
         <td className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" className="rounded border-gray-300" />
         </td>
-        <td className={`px-2 py-1.5 text-xs whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-700'}`}>
-          {fmtDate(r.paymentDate)}
-        </td>
-        <td className={`px-2 py-1.5 text-xs font-semibold whitespace-nowrap ${draft ? 'text-blue-700' : 'text-gray-900'}`}>
-          {r.name}
-        </td>
-        <td className="px-2 py-1.5 text-xs text-gray-700 whitespace-nowrap">{r.journal}</td>
-        <td className="px-2 py-1.5 text-xs text-gray-700 whitespace-nowrap">{r.paymentMethod}</td>
-        <td className="px-2 py-1.5 text-xs text-gray-800 max-w-[14rem] truncate" title={r.partner}>{r.partner}</td>
-        <td className="px-2 py-1.5 text-xs text-gray-700 max-w-[16rem] truncate"
-          title={(r.invoiceNumbers || []).join(', ')}>
-          {(r.invoiceNumbers || []).join(', ')}
-        </td>
-        <td className="px-2 py-1.5 text-xs text-right font-semibold text-gray-900 whitespace-nowrap">
-          {money(r.amount, r.currency)}
-        </td>
-        <td className="px-2 py-1.5">
-          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${PSTATE_PILL[r.state]}`}>
-            {PSTATE[r.state]}
-          </span>
-        </td>
+        {shown.map((c) => (
+          <td key={c} className={`px-2 py-1.5 max-w-[16rem] truncate whitespace-nowrap ${c === 'Amount' ? 'text-right' : ''}`}>
+            {cells[c] ?? ''}
+          </td>
+        ))}
       </tr>
     );
   };
@@ -168,7 +192,7 @@ const PaymentList = ({ menu = 'payments', title, method }) => {
               <Plus className="w-4 h-4" /> Create
             </button>
           )}
-          <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+          <button onClick={toolbar.onExport} className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
             <Download className="w-4 h-4" />
           </button>
         </div>
@@ -227,8 +251,26 @@ const PaymentList = ({ menu = 'payments', title, method }) => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-          <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+          <button onClick={() => toolbar.toggleFavorite({ search })}
+            className={`flex items-center gap-1 hover:text-gray-900 ${toolbar.favorite ? 'text-amber-500' : ''}`}>
+            <Star className={`w-3.5 h-3.5 ${toolbar.favorite ? 'fill-amber-400' : ''}`} /> Favorites
+          </button>
+          <div className="relative">
+            <button onClick={() => toolbar.setColsOpen(!toolbar.colsOpen)} title="Toggle columns"
+              className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {toolbar.colsOpen && (
+              <div className="absolute right-0 top-7 z-20 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase">Columns</div>
+                {COLUMNS.map((c) => (
+                  <label key={c} className="flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300"
+                      checked={!toolbar.hidden.includes(c)} onChange={() => toolbar.toggleColumn(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-xs">
             <span>{from}-{to} / {total}</span>
@@ -284,19 +326,19 @@ const PaymentList = ({ menu = 'payments', title, method }) => {
               <thead className="bg-white border-b border-gray-200">
                 <tr>
                   <th className="px-2 py-2 w-8"><input type="checkbox" className="rounded border-gray-300" /></th>
-                  {COLUMNS.map((h) => (
+                  {shown.map((h) => (
                     <th key={h} className={`px-2 py-2 font-semibold text-gray-800 text-xs whitespace-nowrap ${h === 'Amount' ? 'text-right' : 'text-left'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.length === 0 ? (
-                  <tr><td colSpan={COLUMNS.length + 1} className="text-center py-10 text-gray-400">No records found</td></tr>
+                  <tr><td colSpan={shown.length + 1} className="text-center py-10 text-gray-400">No records found</td></tr>
                 ) : groups ? groups.map(([label, gr]) => (
                   <React.Fragment key={label}>
                     <tr className="bg-gray-100 cursor-pointer"
                       onClick={() => setCollapsed((c) => ({ ...c, [label]: !c[label] }))}>
-                      <td colSpan={COLUMNS.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
+                      <td colSpan={shown.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
                         <span className="inline-flex items-center gap-1">
                           {collapsed[label] ? <ChevRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           {label} ({gr.length})

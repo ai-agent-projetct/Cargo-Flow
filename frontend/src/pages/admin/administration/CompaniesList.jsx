@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { exportCsv } from '../../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, Building2, GripVertical } from 'lucide-react';
@@ -46,6 +47,9 @@ const CompaniesList = () => {
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(data, { key: 'companies', groupFields: [{ key: 'country', label: 'Country' }, { key: 'currency', label: 'Currency' }] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -67,9 +71,7 @@ const CompaniesList = () => {
         <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search companies..." className="max-w-md" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
           </div>
           {total > 0 && (
             <p className="text-xs text-slate-500">{from}-{to}/{total}</p>
@@ -96,7 +98,7 @@ const CompaniesList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {data.map((company) => (
+              {listView.rows.map((company) => (
                 <tr
                   key={company.id}
                   className="hover:bg-slate-50 cursor-pointer"

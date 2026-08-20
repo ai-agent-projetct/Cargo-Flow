@@ -42,11 +42,16 @@ const Header = () => {
       .then((res) => {
         const list = res.data?.data || [];
         setCompanies(list);
-        // Default to the user's own company (or the first one) being active.
+        // Now that the selection actually filters the data, defaulting to the
+        // user's own company would hide every record belonging to the other
+        // operating companies — which, for an account that is not restricted to
+        // one company, looks like an empty app. Start with everything selected
+        // and let the user narrow from there.
         setActiveCompanyIds((prev) => {
           if (prev.length) return prev;
-          const initial = list.find((c) => c.id === user?.companyId) || list[0];
-          return initial ? [initial.id] : [];
+          const allowed = Array.isArray(user?.allowedCompanyIds) ? user.allowedCompanyIds : [];
+          if (allowed.length) return allowed;
+          return list.map((c) => c.id);
         });
       })
       .catch(() => setCompanies([]));
