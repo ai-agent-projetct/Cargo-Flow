@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronDown, ChevronLeft, ChevronRight, Filter, Layers, Star } from 'lucide-react';
+import { Plus, Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cfsReceiptsAPI } from '../../services/api';
 import { getFFJobStatusColor } from '../../utils/helpers';
 import { PageLoader } from '../../common/LoadingSpinner';
+import { useListView } from './administration/useListView';
 import { TRANSPORT_MODES, CARGO_TYPES } from './houseShipment/constants';
 import ExportDataModal from '../../components/ExportDataModal';
 import { CFS_RECEIPT_EXPORT_FIELDS } from './cfs/exportFields';
@@ -111,6 +112,9 @@ const CFSReceipts = () => {
 
   const exportRecords = selectedRecords.length > 0 ? selectedRecords : displayRecords;
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(pageRecords, { key: 'cfs-receipts', groupFields: [{ key: 'state', label: 'State' }, { key: 'cfs', label: 'CFS' }] });
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
@@ -167,18 +171,7 @@ const CFSReceipts = () => {
           )}
         </div>
 
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Filter className="w-3.5 h-3.5" />
-          Filters
-        </button>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Layers className="w-3.5 h-3.5" />
-          Group By
-        </button>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Star className="w-3.5 h-3.5" />
-          Favorites
-        </button>
+        {listView.controls}
 
         <div className="relative ml-auto">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -244,7 +237,7 @@ const CFSReceipts = () => {
               <tbody className="divide-y divide-gray-100">
                 {pageRecords.length === 0 ? (
                   <tr><td colSpan={5} className="text-center py-10 text-gray-400">No CFS receipts found</td></tr>
-                ) : pageRecords.map((rec) => (
+                ) : listView.rows.map((rec) => (
                   <tr
                     key={rec.id}
                     onClick={() => navigate(`/admin/cfs-receipts/${rec.id}`)}

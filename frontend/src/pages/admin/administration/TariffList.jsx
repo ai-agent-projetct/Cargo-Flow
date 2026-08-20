@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, FileText } from 'lucide-react';
 import { tariffsAPI } from '../../../services/api';
@@ -37,6 +38,9 @@ const TariffList = ({ tariffType, basePath }) => {
 
   const jobTypeLabel = (jobType) => (jobType === 'service_job' ? 'Service Job' : 'Shipment');
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(filtered, { key: 'tariffs', groupFields: [{ key: 'tariffType', label: 'Type' }, { key: 'currency', label: 'Currency' }] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -58,9 +62,7 @@ const TariffList = ({ tariffType, basePath }) => {
         <SearchBar value={search} onChange={setSearch} placeholder={`Search ${title.toLowerCase()}...`} className="max-w-md" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
           </div>
           <p className="text-xs text-slate-500">1-{filtered.length}/{filtered.length}</p>
         </div>
@@ -93,7 +95,7 @@ const TariffList = ({ tariffType, basePath }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((item) => (
+                {listView.rows.map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-slate-50 cursor-pointer"

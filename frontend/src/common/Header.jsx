@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import {
-  Menu, Bell, User, LogOut, Settings, ChevronDown, CheckCheck, Check,
-} from 'lucide-react';
+import { Menu, Bell, User, LogOut, Settings, ChevronDown, CheckCheck, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { companiesAPI } from '../services/api';
@@ -55,7 +53,7 @@ const Header = () => {
         });
       })
       .catch(() => setCompanies([]));
-  }, [isAdmin, user?.companyId]);
+  }, [isAdmin, user?.companyId, user?.allowedCompanyIds]);
 
   useEffect(() => {
     localStorage.setItem(ACTIVE_COMPANIES_KEY, JSON.stringify(activeCompanyIds));
@@ -83,11 +81,10 @@ const Header = () => {
     navigate('/login');
   };
 
-  const userName = user?.first_name
-    ? `${user.first_name} ${user.last_name || ''}`.trim()
-    : user?.email?.split('@')[0] || 'User';
+  // The account carries a single `name`; there is no first/last split.
+  const userName = user?.name || user?.email?.split('@')[0] || 'User';
 
-  const initials = user?.first_name?.[0] || user?.email?.[0] || 'U';
+  const initials = (user?.name || user?.email || 'U')[0].toUpperCase();
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center justify-between h-14 flex-shrink-0">

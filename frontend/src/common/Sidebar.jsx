@@ -141,11 +141,11 @@ const Sidebar = () => {
         <div className="p-3 border-t border-slate-700">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {user?.first_name?.[0] || user?.email?.[0] || 'U'}
+              {(user?.name || user?.email || 'U')[0].toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="text-white text-xs font-medium truncate">
-                {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.email}
+                {user?.name || user?.email}
               </p>
               <p className="text-slate-500 text-xs truncate">{user?.email}</p>
             </div>
@@ -154,7 +154,7 @@ const Sidebar = () => {
       ) : (
         <div className="p-3 border-t border-slate-700 flex justify-center">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            {user?.first_name?.[0] || user?.email?.[0] || 'U'}
+            {(user?.name || user?.email || 'U')[0].toUpperCase()}
           </div>
         </div>
       )}

@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Receipt, CreditCard, CheckCircle, XCircle, Briefcase, Wrench,
-  DollarSign, AlertCircle, ArrowRight,
-} from 'lucide-react';
+import { Receipt, CreditCard, CheckCircle, XCircle, Briefcase, Wrench, DollarSign, AlertCircle, ArrowRight } from 'lucide-react';
 import { dashboardAPI } from '../../services/api';
-import { formatCurrency } from '../../utils/helpers';
+
 import { PageLoader } from '../../common/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
 

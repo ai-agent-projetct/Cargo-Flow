@@ -21,7 +21,7 @@ const LIST_COLUMNS = ['Subject', 'Start Date', 'End Date', 'Attendees', 'Locatio
 const CalendarPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const me = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || 'Administrator';
+  const me = user?.name || user?.email || 'Administrator';
   const [scale, setScale] = useState('Day');
   const [mode, setMode] = useState('calendar'); // calendar | list
   const [cursor, setCursor] = useState(new Date());

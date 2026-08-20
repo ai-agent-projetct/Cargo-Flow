@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useListView } from './useListView';
 import { exportCsv } from '../../../utils/exportCsv';
 import { useParams } from 'react-router-dom';
 import { Plus, Download, Save, X, FileText, Trash2 } from 'lucide-react';
@@ -125,6 +126,9 @@ const GenericMasterList = () => {
 
   const total = data.length + (creating ? 1 : 0);
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(data, { key: 'master-data', groupFields: [] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -159,9 +163,7 @@ const GenericMasterList = () => {
         <SearchBar value={search} onChange={setSearch} placeholder={`Search ${config.title.toLowerCase()}...`} className="max-w-md" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
           </div>
           <p className="text-xs text-slate-500">1-{total}/{total}</p>
         </div>
@@ -187,7 +189,7 @@ const GenericMasterList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {data.map((item) => (
+              {listView.rows.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50">
                   {columns.map((f, idx) => (
                     <td key={f.key} className={`px-4 py-3 ${idx === 0 ? 'font-medium text-slate-900' : 'text-slate-600'}`}>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useListView } from './useListView';
 import { ChevronDown, ChevronRight, Download, X } from 'lucide-react';
 import { GROUP_CATEGORIES, ALL_GROUPS } from './groupsData';
 import ExportDataModal from './ExportDataModal';
@@ -63,6 +64,9 @@ const GroupsList = () => {
 
   const clearSelection = () => setSelected(new Set());
 
+  // Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(filteredCategories, { key: 'groups', groupFields: [] });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -120,9 +124,7 @@ const GroupsList = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Filters</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Group By</button>
-            <button className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Favorites</button>
+            {listView.controls}
             <span className="text-xs text-slate-500">1-{filteredCategories.length}/{GROUP_CATEGORIES.length}</span>
           </div>
         </div>
@@ -135,7 +137,7 @@ const GroupsList = () => {
             <span>Group Name</span>
           </div>
 
-          {filteredCategories.map((cat) => (
+          {listView.rows.map((cat) => (
             <div key={cat.name}>
               {/* Category header row */}
               <div className="flex items-center gap-2 px-4 py-2 bg-slate-50/70 cursor-pointer hover:bg-slate-100" onClick={() => toggleCollapse(cat.name)}>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { freightBookingsAPI } from '../../../services/api';
 import { PageLoader } from '../../../common/LoadingSpinner';
+import { useListToolbar } from '../accounting/useListToolbar';
 import { AIR_STATUS, SEA_STATUS, statusLabel, rowTone, fmtDateTime } from './constants';
 
 const COLUMNS = ['Booking Reference', 'Transport Mode', 'carrier', 'Origin Port', 'Destination Port', 'ETD', 'ETA', 'Status'];
@@ -25,6 +26,14 @@ const FreightBookingList = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // Export / Favorites / column toggle, shared with the accounting lists.
+  const toolbar = useListToolbar({
+    key: 'freight-bookings',
+    rows,
+    columns: COLUMNS,
+    exportSpec: [{ key: 'bookingReference', label: 'Booking Reference' }, { key: 'transportCode', label: 'Transport Mode' }, { key: 'carrier', label: 'Carrier' }, { key: 'originPort', label: 'Origin Port' }, { key: 'destinationPort', label: 'Destination Port' }, { key: 'etd', label: 'ETD' }, { key: 'eta', label: 'ETA' }, { key: 'status', label: 'Status' }],
+  });
   const [search, setSearch] = useState('');
   const [facets, setFacets] = useState({ carriers: [], companies: [], airStatuses: [], seaStatuses: [] });
   const [filters, setFilters] = useState([]);
@@ -135,7 +144,7 @@ const FreightBookingList = () => {
           >
             <Plus className="w-4 h-4" /> Create
           </button>
-          <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+          <button onClick={toolbar.onExport} className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
             <Download className="w-4 h-4" />
           </button>
         </div>
@@ -209,8 +218,26 @@ const FreightBookingList = () => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-          <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+          <button onClick={() => toolbar.toggleFavorite({ search })}
+            className={`flex items-center gap-1 hover:text-gray-900 ${toolbar.favorite ? 'text-amber-500' : ''}`}>
+            <Star className={`w-3.5 h-3.5 ${toolbar.favorite ? 'fill-amber-400' : ''}`} /> Favorites
+          </button>
+          <div className="relative">
+            <button onClick={() => toolbar.setColsOpen(!toolbar.colsOpen)} title="Toggle columns"
+              className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {toolbar.colsOpen && (
+              <div className="absolute right-0 top-7 z-20 w-60 bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-72 overflow-y-auto">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase">Columns</div>
+                {COLUMNS.map((c) => (
+                  <label key={c} className="flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300"
+                      checked={!toolbar.hidden.includes(c)} onChange={() => toolbar.toggleColumn(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-xs">
             <span>{from}-{to} / {total}</span>

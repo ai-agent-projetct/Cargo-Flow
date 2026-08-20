@@ -7,6 +7,7 @@ import {
 import { tmsAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
+import { useListToolbar } from '../accounting/useListToolbar';
 
 const COLUMNS = [
   'Shipment ID', 'Declariction/Emanifest', 'Request Date', 'Resubmit Url',
@@ -36,6 +37,14 @@ const TMSRequestList = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // Export / Favorites / column toggle, shared with the accounting lists.
+  const toolbar = useListToolbar({
+    key: 'tms-requests',
+    rows,
+    columns: COLUMNS,
+    exportSpec: [{ key: 'name', label: 'Name' }, { key: 'requestDate', label: 'Request Date' }, { key: 'requestedBy', label: 'Requested By' }, { key: 'providerStatus', label: 'Provider Status' }, { key: 'status', label: 'Status' }, { key: 'reference', label: 'Reference' }],
+  });
   const [search, setSearch] = useState('');
   const [facets, setFacets] = useState({ requesters: [], statuses: [] });
   const [filters, setFilters] = useState([]);
@@ -82,23 +91,33 @@ const TMSRequestList = () => {
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
-  const Row = (r) => (
-    <tr key={r.id} onClick={() => navigate(`/admin/tms/${r.id}`)} className="hover:bg-gray-50 cursor-pointer">
-      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-        <input type="checkbox" className="rounded border-gray-300" />
-      </td>
-      <td className={`px-3 py-2 whitespace-nowrap ${TONE[r.status] || ''}`}>{r.name}</td>
-      <td className="px-3 py-2 text-gray-700 text-xs">{r.providerMessageType || ''}</td>
-      <td className="px-3 py-2 text-gray-700 text-xs whitespace-nowrap">{fmt(r.requestDate)}</td>
-      <td className="px-3 py-2 text-xs">
-        {r.resubmitUrl ? <a href={r.resubmitUrl} className="text-blue-700 hover:underline" onClick={(e) => e.stopPropagation()}>{r.resubmitUrl}</a> : ''}
-      </td>
-      <td className="px-3 py-2 text-gray-700 text-xs whitespace-nowrap">{fmt(r.requestCompleteDate)}</td>
-      <td className="px-3 py-2 text-gray-700 text-xs whitespace-nowrap">{r.requestedBy || ''}</td>
-      <td className={`px-3 py-2 text-xs font-medium whitespace-nowrap ${TONE[r.status] || ''}`}>{r.providerStatus || ''}</td>
-      <td className={`px-3 py-2 text-xs whitespace-nowrap ${TONE[r.status] || ''}`}>{STATUS[r.status] || r.status}</td>
-    </tr>
-  );
+  const shown = COLUMNS.filter((c) => !toolbar.hidden.includes(c));
+
+  // Cells keyed by column label so hiding a column drops its cells with it.
+  const Row = (r) => {
+    const cells = {
+      'Shipment ID': <span className={TONE[r.status] || ''}>{r.name}</span>,
+      'Declariction/Emanifest': <span className="text-gray-700 text-xs">{r.providerMessageType || ''}</span>,
+      'Request Date': <span className="text-gray-700 text-xs">{fmt(r.requestDate)}</span>,
+      'Resubmit Url': r.resubmitUrl
+        ? <a href={r.resubmitUrl} className="text-blue-700 hover:underline text-xs" onClick={(e) => e.stopPropagation()}>{r.resubmitUrl}</a>
+        : '',
+      'Request Complete Date': <span className="text-gray-700 text-xs">{fmt(r.requestCompleteDate)}</span>,
+      'Requested By': <span className="text-gray-700 text-xs">{r.requestedBy || ''}</span>,
+      'Provider Status': <span className={`text-xs font-medium ${TONE[r.status] || ''}`}>{r.providerStatus || ''}</span>,
+      Status: <span className={`text-xs ${TONE[r.status] || ''}`}>{STATUS[r.status] || r.status}</span>,
+    };
+    return (
+      <tr key={r.id} onClick={() => navigate(`/admin/tms/${r.id}`)} className="hover:bg-gray-50 cursor-pointer">
+        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" className="rounded border-gray-300" />
+        </td>
+        {shown.map((c) => (
+          <td key={c} className="px-3 py-2 whitespace-nowrap max-w-[18rem] truncate">{cells[c] ?? ''}</td>
+        ))}
+      </tr>
+    );
+  };
 
   return (
     <div className="p-6">
@@ -118,7 +137,7 @@ const TMSRequestList = () => {
 
       <div className="flex items-center justify-between gap-3 flex-wrap mb-3 relative overflow-visible" ref={menuRef}>
         {/* No Create button: the model is system-written (create="false" in the demo). */}
-        <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+        <button onClick={toolbar.onExport} className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
           <Download className="w-4 h-4" />
         </button>
 
@@ -173,8 +192,26 @@ const TMSRequestList = () => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-          <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+          <button onClick={() => toolbar.toggleFavorite({ search })}
+            className={`flex items-center gap-1 hover:text-gray-900 ${toolbar.favorite ? 'text-amber-500' : ''}`}>
+            <Star className={`w-3.5 h-3.5 ${toolbar.favorite ? 'fill-amber-400' : ''}`} /> Favorites
+          </button>
+          <div className="relative">
+            <button onClick={() => toolbar.setColsOpen(!toolbar.colsOpen)} title="Toggle columns"
+              className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {toolbar.colsOpen && (
+              <div className="absolute right-0 top-7 z-20 w-60 bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-72 overflow-y-auto">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase">Columns</div>
+                {COLUMNS.map((c) => (
+                  <label key={c} className="flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300"
+                      checked={!toolbar.hidden.includes(c)} onChange={() => toolbar.toggleColumn(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-xs">
             <span>{from}-{to} / {total}</span>
@@ -191,18 +228,18 @@ const TMSRequestList = () => {
               <thead className="bg-white border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-2 w-10"><input type="checkbox" className="rounded border-gray-300" /></th>
-                  {COLUMNS.map((h) => (
+                  {shown.map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-semibold text-gray-800 text-xs whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.length === 0 ? (
-                  <tr><td colSpan={COLUMNS.length + 1} className="text-center py-10 text-gray-400">No TMS requests found</td></tr>
+                  <tr><td colSpan={shown.length + 1} className="text-center py-10 text-gray-400">No TMS requests found</td></tr>
                 ) : groups ? groups.map(([label, gr]) => (
                   <React.Fragment key={label}>
                     <tr className="bg-gray-100 cursor-pointer" onClick={() => setCollapsed((c) => ({ ...c, [label]: !c[label] }))}>
-                      <td colSpan={COLUMNS.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
+                      <td colSpan={shown.length + 1} className="px-3 py-2 font-semibold text-gray-700 text-xs">
                         <span className="inline-flex items-center gap-1">
                           {collapsed[label] ? <ChevRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           {label} ({gr.length})
