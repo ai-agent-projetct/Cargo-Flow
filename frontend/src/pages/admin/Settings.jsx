@@ -1,14 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save, Building2, Bell, Shield, Palette } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useApp } from '../../context/AppContext';
+import api from '../../services/api';
 import { authAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
   const { user, updateUser } = useAuth();
+  const { sidebarCollapsed, toggleSidebar } = useApp();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
+
+  // Notification switches, loaded from and saved to the shared settings store.
+  const NOTIFY = [
+    ['New shipment bookings', true],
+    ['Shipment status updates', true],
+    ['New quotation requests', true],
+    ['Invoice payment received', true],
+    ['Overdue invoice alerts', true],
+    ['System maintenance alerts', false],
+  ];
+  const [notify, setNotify] = useState(() => Object.fromEntries(NOTIFY.map(([k, v]) => [k, v])));
+
+  // Theme is applied on the document root; the stylesheet keys off it.
+  const [theme, setTheme] = useState(() => localStorage.getItem('cargoflo.theme') || 'Light');
+
+  const applyTheme = useCallback((choice) => {
+    const wantDark = choice === 'Dark'
+      || (choice === 'System' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', wantDark ? 'dark' : 'light');
+  }, []);
+
+  useEffect(() => {
+    applyTheme(theme);
+    localStorage.setItem('cargoflo.theme', theme);
+  }, [theme, applyTheme]);
+
+  useEffect(() => {
+    api.get('/settings').then((r) => {
+      const stored = r.data?.data?.settings?.notifications;
+      if (stored) {
+        setNotify((n) => Object.fromEntries(
+          Object.keys(n).map((k) => [k, stored[k] === undefined ? n[k] : stored[k] === true || stored[k] === 'true'])
+        ));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const savePreferences = async () => {
+    setLoading(true);
+    try {
+      await api.put('/settings', { settings: { notifications: notify } });
+      toast.success('Notification preferences saved');
+    } catch {
+      toast.error('Could not save preferences');
+    } finally { setLoading(false); }
+  };
+
+  // The avatar rides on the account like any other profile field.
+  const changePhoto = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 512 * 1024) { toast.error('Pick an image under 512 KB'); return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const res = await authAPI.updateProfile({ avatar: reader.result });
+        updateUser(res.data.data);
+        toast.success('Photo updated');
+      } catch {
+        toast.error('Could not update the photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const profileForm = useForm({
     defaultValues: {
@@ -83,7 +151,10 @@ const AdminSettings = () => {
             <div>
               <p className="font-semibold text-slate-900">{user?.name || '—'}</p>
               <p className="text-sm text-slate-500">{user?.email}</p>
-              <button className="mt-1 text-xs text-primary-600 hover:text-primary-800">Change photo</button>
+              <label className="mt-1 inline-block text-xs text-primary-600 hover:text-primary-800 cursor-pointer">
+                <input type="file" accept="image/*" className="hidden" onChange={changePhoto} />
+                Change photo
+              </label>
             </div>
           </div>
           <form onSubmit={profileForm.handleSubmit(handleProfileSave)} className="space-y-4">
@@ -141,26 +212,22 @@ const AdminSettings = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-900 mb-5">Notification Preferences</h3>
           <div className="space-y-4">
-            {[
-              ['New shipment bookings', true],
-              ['Shipment status updates', true],
-              ['New quotation requests', true],
-              ['Invoice payment received', true],
-              ['Overdue invoice alerts', true],
-              ['System maintenance alerts', false],
-            ].map(([label, def]) => (
+            {NOTIFY.map(([label]) => (
               <div key={label} className="flex items-center justify-between py-2 border-b border-slate-50">
                 <span className="text-sm text-slate-700">{label}</span>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" defaultChecked={def} className="sr-only peer" />
+                  <input type="checkbox" className="sr-only peer"
+                    checked={!!notify[label]}
+                    onChange={(e) => setNotify((n) => ({ ...n, [label]: e.target.checked }))} />
                   <div className="w-10 h-5 bg-slate-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:bg-primary-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" />
                 </label>
               </div>
             ))}
           </div>
           <div className="flex justify-end pt-4">
-            <button className="flex items-center gap-2 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
-              <Save className="w-4 h-4" /> Save Preferences
+            <button onClick={savePreferences} disabled={loading}
+              className="flex items-center gap-2 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium disabled:opacity-60">
+              <Save className="w-4 h-4" /> {loading ? 'Saving…' : 'Save Preferences'}
             </button>
           </div>
         </div>
@@ -174,7 +241,8 @@ const AdminSettings = () => {
               <label className="block text-sm font-medium text-slate-700 mb-3">Theme</label>
               <div className="grid grid-cols-3 gap-3">
                 {['Light', 'Dark', 'System'].map((t) => (
-                  <button key={t} className={`p-3 border-2 rounded-xl text-sm font-medium transition-colors ${t === 'Light' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  <button key={t} onClick={() => setTheme(t)}
+                    className={`p-3 border-2 rounded-xl text-sm font-medium transition-colors ${t === theme ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
                     {t}
                   </button>
                 ))}
@@ -183,11 +251,16 @@ const AdminSettings = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-3">Sidebar Style</label>
               <div className="grid grid-cols-2 gap-3">
-                {['Expanded', 'Compact'].map((s) => (
-                  <button key={s} className={`p-3 border-2 rounded-xl text-sm font-medium ${s === 'Expanded' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                    {s}
-                  </button>
-                ))}
+                {['Expanded', 'Compact'].map((label) => {
+                  const active = (label === 'Compact') === !!sidebarCollapsed;
+                  return (
+                    <button key={label}
+                      onClick={() => { if (!active) toggleSidebar(); }}
+                      className={`p-3 border-2 rounded-xl text-sm font-medium ${active ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

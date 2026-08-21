@@ -92,3 +92,52 @@ body {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
 }
+
+/* ── Dark theme ───────────────────────────────────────────────────────────────
+   Settings > Appearance sets data-theme on <html>. The app's components use
+   Tailwind's light palette directly, so rather than rewriting every screen the
+   handful of surface, text and border utilities they rely on are remapped here.
+   Anything that carries its own colour (status pills, buttons, charts) is left
+   alone so it stays legible. */
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+[data-theme='dark'] body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+[data-theme='dark'] .bg-white { background-color: #1e293b !important; }
+[data-theme='dark'] .bg-gray-50,
+[data-theme='dark'] .bg-slate-50 { background-color: #172033 !important; }
+[data-theme='dark'] .bg-gray-100,
+[data-theme='dark'] .bg-slate-100 { background-color: #23324a !important; }
+
+[data-theme='dark'] .text-gray-900,
+[data-theme='dark'] .text-slate-900 { color: #f1f5f9 !important; }
+[data-theme='dark'] .text-gray-800,
+[data-theme='dark'] .text-slate-800 { color: #e2e8f0 !important; }
+[data-theme='dark'] .text-gray-700,
+[data-theme='dark'] .text-slate-700 { color: #cbd5e1 !important; }
+[data-theme='dark'] .text-gray-600,
+[data-theme='dark'] .text-slate-600,
+[data-theme='dark'] .text-gray-500,
+[data-theme='dark'] .text-slate-500 { color: #94a3b8 !important; }
+
+[data-theme='dark'] .border-gray-100,
+[data-theme='dark'] .border-slate-100,
+[data-theme='dark'] .border-gray-200,
+[data-theme='dark'] .border-slate-200,
+[data-theme='dark'] .border-gray-300 { border-color: #334155 !important; }
+
+[data-theme='dark'] .divide-gray-100 > * + *,
+[data-theme='dark'] .divide-gray-50 > * + * { border-color: #334155 !important; }
+
+[data-theme='dark'] input,
+[data-theme='dark'] select,
+[data-theme='dark'] textarea {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+[data-theme='dark'] .hover\:bg-gray-50:hover,
+[data-theme='dark'] .hover\:bg-slate-50:hover { background-color: #23324a !important; }
