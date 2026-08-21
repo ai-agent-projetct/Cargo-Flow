@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Download, LayoutGrid, List, Building2, User, ChevronDown, ChevronRight } from 'lucide-react';
 import { organizationsAPI } from '../../services/api';
@@ -109,6 +111,12 @@ const AdminOrganizations = () => {
 
   const groups = buildGroups(orgs, groupBy);
 
+  // Export the organizations currently listed.
+  const handleExport = () => {
+    if (exportCsv(orgs, null, 'organizations')) toast.success(`Exported ${orgs.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -132,7 +140,7 @@ const AdminOrganizations = () => {
           >
             <Plus className="w-4 h-4" /> Create
           </button>
-          <button className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
+          <button onClick={handleExport} className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
             <Download className="w-4 h-4" />
           </button>
         </div>

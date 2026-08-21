@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../utils/exportCsv';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Download } from 'lucide-react';
 import { shipmentSharingsAPI } from '../../services/api';
@@ -54,6 +56,15 @@ const ShipmentSharings = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Download the sharing records currently listed.
+  const downloadSharing = () => {
+    if (exportCsv(records, null, converted ? 'converted-shipments' : 'pending-shipments')) {
+      toast.success(`Exported ${records.length} rows`);
+    } else {
+      toast.error('Nothing to export');
+    }
+  };
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
@@ -78,7 +89,8 @@ const ShipmentSharings = () => {
           <h2 className="text-base font-semibold text-gray-800">
             {converted ? 'Converted Shipment' : 'Pending Shipment'}
           </h2>
-          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Download">
+          <button onClick={downloadSharing}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Download">
             <Download className="w-4 h-4" />
           </button>
         </div>

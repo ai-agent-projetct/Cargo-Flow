@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, ArrowLeft, ArrowRight, Search, Filter, Star, CalendarDays, List, X, Download,
@@ -129,6 +130,12 @@ const CalendarPage = () => {
     }
   };
 
+  // Export the rows currently on screen, so the file matches the filters.
+  const handleExport = () => {
+    if (exportCsv(events, null, 'calendar-events')) toast.success(`Exported ${events.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Calendar</h1>
@@ -180,7 +187,7 @@ const CalendarPage = () => {
               >
                 <Plus className="w-4 h-4" /> Create
               </button>
-              <button className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
+              <button onClick={handleExport} className="p-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50" title="Export">
                 <Download className="w-4 h-4" />
               </button>
             </>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { exportCsv } from '../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Filter, Download, Eye, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Plus, FileText, Download, Eye, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { quotationsAPI } from '../../services/api';
 import DataTable from '../../common/DataTable';
 import StatusBadge from '../../common/StatusBadge';
@@ -203,6 +204,12 @@ const AdminQuotations = () => {
     },
   ];
 
+  // Export the rows currently on screen, so the file matches the filters.
+  const handleExport = () => {
+    if (exportCsv(data, null, 'quotations')) toast.success(`Exported ${data.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -219,7 +226,7 @@ const AdminQuotations = () => {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+          <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
             <Download className="w-4 h-4" /> Export
           </button>
           <button

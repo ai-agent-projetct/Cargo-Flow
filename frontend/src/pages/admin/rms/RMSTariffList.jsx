@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Download } from 'lucide-react';
 import { rmsTariffsAPI } from '../../../services/api';
@@ -31,6 +33,12 @@ const RMSTariffList = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Export the rows currently on screen, so the file matches the filters.
+  const handleExport = () => {
+    if (exportCsv(rows, null, 'rms-tariffs')) toast.success(`Exported ${rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -57,7 +65,7 @@ const RMSTariffList = () => {
         >
           <Plus className="w-4 h-4" /> Create
         </button>
-        <button className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
+        <button onClick={handleExport} className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
           <Download className="w-4 h-4" />
         </button>
       </div>

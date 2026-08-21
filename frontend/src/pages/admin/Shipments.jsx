@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { exportCsv } from '../../utils/exportCsv';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Package, RefreshCw, Download, Eye, Trash2 } from 'lucide-react';
 import { shipmentsAPI } from '../../services/api';
@@ -146,6 +147,12 @@ const AdminShipments = () => {
     },
   ];
 
+  // Export the rows currently on screen, so the file matches the filters.
+  const handleExport = () => {
+    if (exportCsv(data, null, 'shipments')) toast.success(`Exported ${data.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -155,7 +162,7 @@ const AdminShipments = () => {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={fetchData} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><RefreshCw className="w-4 h-4" /></button>
-          <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+          <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
             <Download className="w-4 h-4" /> Export
           </button>
           <button onClick={() => navigate('/admin/shipments/create')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
