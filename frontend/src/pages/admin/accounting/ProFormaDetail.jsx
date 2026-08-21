@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { accountingAPI } from '../../../services/api';
 import { usePermissions } from '../../../context/PermissionContext';
 import { PageLoader } from '../../../common/LoadingSpinner';
+import { exportCsv } from '../../../utils/exportCsv';
 import OrganizationChatter from '../organization/OrganizationChatter';
 import { PF_STATE } from './ProFormaList';
 import { PRODUCTS, TAXES, CURRENCIES, money, num, recalcLine, totalsFor } from './constants';
@@ -40,6 +41,28 @@ const ProFormaDetail = () => {
   const [editing, setEditing] = useState(isNew);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+
+  const [actionOpen, setActionOpen] = useState(false);
+  const actionRef = useRef(null);
+
+  useEffect(() => {
+    const away = (e) => { if (actionRef.current && !actionRef.current.contains(e.target)) setActionOpen(false); };
+    document.addEventListener('mousedown', away);
+    return () => document.removeEventListener('mousedown', away);
+  }, []);
+
+  const onExportOne = () => {
+    setActionOpen(false);
+    if (!rec) return;
+    exportCsv([rec], null, (rec.name || 'pro forma').replace(/\//g, '-'));
+    toast.success('Exported');
+  };
+
+  const onDelete = async () => {
+    setActionOpen(false);
+    const res = await guard(() => accountingAPI.deleteProForma(id));
+    if (res) { toast.success('Deleted'); navigate('/admin/accounting/customers/pro-forma'); }
+  };
 
   const load = useCallback(async () => {
     setEditing(isNew);
@@ -135,8 +158,24 @@ const ProFormaDetail = () => {
               {a.edit && can('pro.forma.invoice', 'write') && (
                 <button onClick={() => setEditing(true)} className={btn}>Edit</button>
               )}
-              <button className={`${ghost} flex items-center gap-1.5`}><Printer className="w-4 h-4" /> Print</button>
-              <button className={ghost}>⚙ Action</button>
+              <button onClick={() => window.print()} className={`${ghost} flex items-center gap-1.5`}>
+                <Printer className="w-4 h-4" /> Print
+              </button>
+              <div className="relative" ref={actionRef}>
+                <button onClick={() => setActionOpen((o) => !o)} className={ghost}>⚙ Action</button>
+                {actionOpen && (
+                  <div className="absolute left-0 top-9 z-30 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                    <button onClick={onExportOne}
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Export</button>
+                    {/* Only a draft may be deleted; anything posted must be
+                        cancelled first, matching the server-side guard. */}
+                    <button onClick={onDelete} disabled={rec?.state !== 'draft' && rec?.state !== 'to_approve'}
+                      className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-white">
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
