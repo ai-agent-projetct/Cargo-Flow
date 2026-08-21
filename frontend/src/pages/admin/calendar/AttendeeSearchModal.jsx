@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Search, Filter, Layers, Star, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calendarAPI } from '../../../services/api';
+import { useListView } from '../administration/useListView';
+import { exportCsv } from '../../../utils/exportCsv';
+import toast from 'react-hot-toast';
 
 const COLUMNS = ['Name', 'Phone', 'Email', 'Salesperson', 'Next Activity', 'City', 'Country', 'Company'];
 const PAGE_SIZE = 80;
@@ -32,6 +35,17 @@ const AttendeeSearchModal = ({ onClose, onPick }) => {
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
+  // The picker's own Filters / Group By / Favorites, applied to the rows below.
+  const listView = useListView(rows, {
+    key: 'attendees',
+    groupFields: [{ key: 'country', label: 'Country' }, { key: 'city', label: 'City' }],
+  });
+
+  const handleExport = () => {
+    if (exportCsv(listView.rows, null, 'attendees')) toast.success(`Exported ${listView.rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl w-full max-w-5xl my-8">
@@ -51,10 +65,9 @@ const AttendeeSearchModal = ({ onClose, onPick }) => {
             <Search className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-600">
-            <button className="flex items-center gap-1 hover:text-gray-900"><Filter className="w-3.5 h-3.5" /> Filters</button>
-            <button className="flex items-center gap-1 hover:text-gray-900"><Layers className="w-3.5 h-3.5" /> Group By</button>
-            <button className="flex items-center gap-1 hover:text-gray-900"><Star className="w-3.5 h-3.5" /> Favorites</button>
-            <button className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            {listView.controls}
+            <button onClick={handleExport} title="Export this list"
+              className="hover:text-gray-900"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-600">
             <span>{from}-{to} / {total}</span>
@@ -85,7 +98,7 @@ const AttendeeSearchModal = ({ onClose, onPick }) => {
                 <tr><td colSpan={COLUMNS.length} className="text-center py-10 text-gray-400 text-xs">Loading...</td></tr>
               ) : rows.length === 0 ? (
                 <tr><td colSpan={COLUMNS.length} className="text-center py-10 text-gray-400 text-xs">No records found</td></tr>
-              ) : rows.map((r) => (
+              ) : listView.rows.map((r) => (
                 <tr key={r.id} onClick={() => onPick(r)} className="hover:bg-blue-50 cursor-pointer">
                   <td className="px-3 py-1.5 text-gray-800 whitespace-nowrap max-w-[14rem] truncate" title={r.name}>{r.name}</td>
                   <td className="px-3 py-1.5 text-gray-600 text-xs whitespace-nowrap">{r.phone}</td>
