@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, StickyNote, Clock, Paperclip, Users } from 'lucide-react';
+import ScheduleActivityModal from '../../../common/ScheduleActivityModal';
 import { organizationsAPI } from '../../../services/api';
 import toast from 'react-hot-toast';
 
@@ -20,9 +21,13 @@ const relative = (iso) => {
 
 // `api` lets other modules (RMS tariffs, etc.) reuse this feed — any client
 // exposing addActivity(id, {kind, body}) works.
-const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, onPosted, api }) => {
+const OrganizationChatter = ({
+  organizationId, entries = [], followerCount = 0, onPosted, api,
+  resModel = 'organization', resName,
+}) => {
   const client = api || organizationsAPI;
   const [composing, setComposing] = useState(null); // 'message' | 'note' | null
+  const [showActivity, setShowActivity] = useState(false);
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +56,7 @@ const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, 
   }
 
   return (
+    <>
     <div className="mt-6">
       <div className="flex items-center justify-between flex-wrap gap-3 border-b border-gray-200 pb-2">
         <div className="flex items-center gap-4">
@@ -69,7 +75,7 @@ const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, 
             </button>
           ))}
           <button
-            onClick={() => toast('Activity scheduling coming soon')}
+            onClick={() => setShowActivity(true)}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
           >
             <Clock className="w-4 h-4" /> Schedule activity
@@ -141,6 +147,14 @@ const OrganizationChatter = ({ organizationId, entries = [], followerCount = 0, 
         ))}
       </div>
     </div>
+      <ScheduleActivityModal
+        open={showActivity}
+        onClose={() => setShowActivity(false)}
+        resModel={resModel}
+        resId={organizationId}
+        resName={resName}
+      />
+    </>
   );
 };
 

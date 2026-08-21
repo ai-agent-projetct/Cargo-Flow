@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../../services/api';
 import { X, Paperclip, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -7,6 +8,7 @@ import toast from 'react-hot-toast';
 // Subject / Replies (radio) / message body / Attach a file, with a "booking"
 // mail template selector and Send / Cancel / Save as new template actions.
 const SendMailModal = ({ isOpen, onClose, recordName = '' }) => {
+  const [attachments, setAttachments] = useState([]);
   const [cc, setCc] = useState('');
   const [subject, setSubject] = useState(recordName ? `${recordName}` : '');
   const [replyMode, setReplyMode] = useState('thread');
@@ -15,6 +17,21 @@ const SendMailModal = ({ isOpen, onClose, recordName = '' }) => {
   const [template, setTemplate] = useState('booking');
 
   if (!isOpen) return null;
+
+  // Templates live in the shared settings store, keyed by name, so they are
+  // available the next time this modal opens.
+  const handleSaveTemplate = async () => {
+    const name = window.prompt('Name this template');
+    if (!name) return;
+    try {
+      await api.put('/settings', {
+        settings: { 'email-templates': { [name]: JSON.stringify({ subject, body }) } },
+      });
+      toast.success(`Template "${name}" saved`);
+    } catch {
+      toast.error('Could not save the template');
+    }
+  };
 
   const handleSend = () => {
     toast.success('Email sent');
@@ -124,12 +141,30 @@ const SendMailModal = ({ isOpen, onClose, recordName = '' }) => {
           />
 
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <button
-              onClick={() => toast('Coming soon')}
-              className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50"
+            <label
+              className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"
             >
+              <input type="file" multiple className="hidden"
+                onChange={(e) => {
+                  const picked = [...(e.target.files || [])];
+                  e.target.value = '';
+                  if (picked.length) setAttachments((a) => [...a, ...picked]);
+                }} />
               <Paperclip className="w-3.5 h-3.5" /> Attach a file
-            </button>
+            </label>
+            {attachments.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {attachments.map((f, i) => (
+                  // Picked files have no id of their own.
+                  // eslint-disable-next-line react/no-array-index-key
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-700">
+                    {f.name}
+                    <button type="button" onClick={() => setAttachments((a) => a.filter((_, x) => x !== i))}
+                      className="text-slate-400 hover:text-slate-700">x</button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <span className="text-slate-600 font-medium">Use template</span>
               <select
@@ -139,7 +174,9 @@ const SendMailModal = ({ isOpen, onClose, recordName = '' }) => {
               >
                 <option value="booking">booking</option>
               </select>
-              <button onClick={() => toast('Coming soon')} className="p-1.5 text-slate-400 hover:text-slate-600">
+              <button type="button" title="Manage email templates"
+                onClick={() => window.open('/admin/administration/master-data/email-templates', '_blank', 'noopener')}
+                className="p-1.5 text-slate-400 hover:text-slate-600">
                 <ExternalLink className="w-4 h-4" />
               </button>
             </div>
@@ -156,7 +193,8 @@ const SendMailModal = ({ isOpen, onClose, recordName = '' }) => {
               Cancel
             </button>
           </div>
-          <button onClick={() => toast('Coming soon')} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">
+          <button onClick={handleSaveTemplate}
+            className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">
             Save as new template
           </button>
         </div>

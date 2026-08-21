@@ -56,6 +56,22 @@ const CompanyForm = () => {
   const isEdit = !!id;
 
   const [form, setForm] = useState(emptyForm);
+
+  // Images are held as data URLs on the form so they save with the record
+  // through the same endpoint as every other field.
+  const handlePickImage = (e, field) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 1024 * 1024) { toast.error('Pick an image under 1 MB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((f) => ({ ...f, [field]: reader.result }));
+      toast.success(`${field === 'logo' ? 'Logo' : 'Favicon'} attached — save to keep it`);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -182,12 +198,14 @@ const CompanyForm = () => {
             placeholder="e.g. My Company"
             className="w-full max-w-xl text-2xl font-semibold border-0 border-b-2 border-slate-200 focus:border-primary-500 focus:ring-0 px-0 py-2 placeholder-slate-300"
           />
-          <button
-            onClick={() => toast('Upload coming soon')}
-            className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 whitespace-nowrap"
-          >
-            <Image className="w-4 h-4" /> Your logo
-          </button>
+          <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 whitespace-nowrap cursor-pointer">
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handlePickImage(e, 'logo')} />
+            {form.logo
+              ? <img src={form.logo} alt="Company logo" className="w-5 h-5 object-contain" />
+              : <Image className="w-4 h-4" />}
+            {form.logo ? 'Change logo' : 'Your logo'}
+          </label>
         </div>
 
         {/* Tabs */}
@@ -314,12 +332,13 @@ const CompanyForm = () => {
               </div>
               <div>
                 <label className={labelClass}>Company Favicon</label>
-                <button
-                  onClick={() => toast('Upload coming soon')}
-                  className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:border-primary-400 hover:text-primary-500"
-                >
-                  <Plus className="w-6 h-6" />
-                </button>
+                <label className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:border-primary-400 hover:text-primary-500 cursor-pointer overflow-hidden">
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={(e) => handlePickImage(e, 'favicon')} />
+                  {form.favicon
+                    ? <img src={form.favicon} alt="Company favicon" className="w-full h-full object-contain" />
+                    : <Plus className="w-6 h-6" />}
+                </label>
               </div>
               <div>
                 <label className={labelClass}>Agent</label>

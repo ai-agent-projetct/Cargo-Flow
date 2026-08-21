@@ -1,8 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Eye, Search } from 'lucide-react';
 import { creditNotesAPI } from '../../services/api';
 import { PageLoader } from '../../common/LoadingSpinner';
-import toast from 'react-hot-toast';
 
 const mockCreditNotes = [
   { id: 1, creditNoteNumber: 'CN-2025-00008', customer: { companyName: 'Acme Logistics Sdn Bhd' }, issuedDate: '2025-09-10', invoice: { invoiceNumber: 'INV-2025-00911' }, totalAmount: 2500, currency: 'MYR', status: 'issued' },
@@ -18,6 +18,7 @@ const statusColors = {
 };
 
 const AdminCreditNotes = () => {
+  const navigate = useNavigate();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,7 +50,7 @@ const AdminCreditNotes = () => {
         <h1 className="text-xl font-bold text-gray-900">Credit Notes</h1>
         <button
           className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
-          onClick={() => toast.info('Create form coming soon')}
+          onClick={() => navigate('/admin/accounting/customers/credit-notes/create')}
         >
           <Plus className="w-4 h-4" /> New Credit Note
         </button>

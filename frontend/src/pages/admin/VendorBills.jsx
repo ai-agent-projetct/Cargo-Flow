@@ -1,8 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Eye, Search } from 'lucide-react';
 import { vendorBillsAPI } from '../../services/api';
 import { PageLoader } from '../../common/LoadingSpinner';
-import toast from 'react-hot-toast';
 
 const mockBills = [
   { id: 1, billNumber: 'BILL/2025/00001', vendor: { companyName: 'Evergreen Marine' }, billDate: '2025-09-05', dueDate: '2025-10-05', totalAmount: 8500, currency: 'MYR', ffJob: { jobNumber: 'SEA-E-FCL-H-N-2025-00911' }, status: 'posted' },
@@ -17,6 +17,7 @@ const statusColors = {
 };
 
 const AdminVendorBills = () => {
+  const navigate = useNavigate();
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -48,7 +49,7 @@ const AdminVendorBills = () => {
         <h1 className="text-xl font-bold text-gray-900">Vendor Bills</h1>
         <button
           className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
-          onClick={() => toast.info('Create form coming soon')}
+          onClick={() => navigate('/admin/accounting/vendors/bills/create')}
         >
           <Plus className="w-4 h-4" /> New Bill
         </button>

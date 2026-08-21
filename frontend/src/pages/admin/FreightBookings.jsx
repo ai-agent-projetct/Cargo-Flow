@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Eye, Search } from 'lucide-react';
 import { freightBookingsAPI } from '../../services/api';
@@ -17,6 +18,7 @@ const statusColors = {
 };
 
 const AdminFreightBookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,7 +51,7 @@ const AdminFreightBookings = () => {
         <h1 className="text-xl font-bold text-gray-900">Freight Bookings</h1>
         <button
           className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
-          onClick={() => toast.info('Create form coming soon')}
+          onClick={() => navigate('/admin/freight-booking/create')}
         >
           <Plus className="w-4 h-4" /> New Booking
         </button>

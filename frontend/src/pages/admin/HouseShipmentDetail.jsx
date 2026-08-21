@@ -10,9 +10,12 @@ import {
   ffJobsAPI, quotationsAPI, customersAPI, usersAPI, portsAPI,
   invoicesAPI, vendorBillsAPI, creditNotesAPI,
 } from '../../services/api';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { PageLoader } from '../../common/LoadingSpinner';
 import toast from 'react-hot-toast';
+import ScheduleActivityModal from '../../common/ScheduleActivityModal';
+import { exportCsv } from '../../utils/exportCsv';
 import { buildDocumentPdf, downloadDocumentPdf, getDocumentBlobUrl } from '../../utils/documentPdf';
 
 import {
@@ -164,6 +167,8 @@ const AdminHouseShipmentDetail = () => {
   // chatter
   const [logNoteText, setLogNoteText] = useState('');
   const [showLogNote, setShowLogNote] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [docActionMenuOpen, setDocActionMenuOpen] = useState(false);
@@ -625,6 +630,28 @@ const AdminHouseShipmentDetail = () => {
     navigate(`/admin/master-shipments/create?houseShipmentId=${id}`);
   };
 
+  // Uploads land in the same Documents store the rest of the app reads, tagged
+  // with this shipment so they appear on its Documents tab.
+  const handleUploadDocument = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const body = new FormData();
+    body.append('file', file);
+    body.append('name', file.name);
+    body.append('documentType', 'other');
+    body.append('jobId', id);
+    try {
+      await api.post('/documents', body, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success(`${file.name} uploaded`);
+      // Re-read the record so the Documents tab and its counter pick it up.
+      const fresh = await ffJobsAPI.getById(id);
+      if (fresh?.data?.data) setForm((f) => ({ ...f, ...fresh.data.data }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Upload failed');
+    }
+  };
+
   const handleDelete = async () => {
     setShowActionMenu(false);
     if (isNew) return;
@@ -658,9 +685,50 @@ const AdminHouseShipmentDetail = () => {
     toast(`Generating ${templateName}...`, { icon: '🖨️' });
   };
 
+  // The job cost sheet is the shipment's revenue and cost charges side by side,
+  // which is what the counters above the form already total.
+  const costSheetRows = () => ([
+    { line: 'Revenue Charges', amount: counts.revenueCharges, currency: 'AED' },
+    { line: 'Cost Charges', amount: counts.costCharges, currency: 'AED' },
+    { line: 'Gross Margin', amount: Number(counts.revenueCharges || 0) - Number(counts.costCharges || 0), currency: 'AED' },
+  ]);
+
   const handleAction = (actionName) => {
     setShowActionMenu(false);
+    const rows = costSheetRows();
+    const spec = [
+      { key: 'line', label: 'Line' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'currency', label: 'Currency' },
+    ];
+    if (actionName === 'Job Cost Sheet (Excel)') {
+      exportCsv(rows, spec, `job-cost-sheet-${(form.jobNumber || id || '').replace(/\//g, '-')}`);
+      toast.success('Job cost sheet exported');
+      return;
+    }
+    if (actionName === 'Send Job Cost Sheet') {
+      // Mail goes out from the shipment's own chatter so there is a record of it.
+      setShowMessage(true);
+      return;
+    }
     toast(`${actionName} – coming soon`, { icon: 'ℹ️' });
+  };
+
+  // A message is the same chatter entry as a note, marked so the timeline can
+  // tell the two apart the way the source system does.
+  const [messageText, setMessageText] = useState('');
+  const handleSendMessage = () => {
+    if (!messageText.trim()) return;
+    const entry = {
+      user: user?.name || 'You',
+      message: messageText.trim(),
+      kind: 'message',
+      timestamp: new Date().toISOString(),
+    };
+    setForm((f) => ({ ...f, activityLog: [entry, ...(f.activityLog || [])] }));
+    setMessageText('');
+    setShowMessage(false);
+    toast.success('Message posted to the shipment');
   };
 
   const handleAddLogNote = () => {
@@ -823,7 +891,7 @@ const AdminHouseShipmentDetail = () => {
             Change Status
           </button>
           <button
-            onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
+            onClick={() => navigate(`/admin/operations/cfs-receipts?shipment=${encodeURIComponent(form.jobNumber || '')}`)}
             className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg"
           >
             Attach CFS
@@ -1316,7 +1384,7 @@ const AdminHouseShipmentDetail = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
+            onClick={() => setShowMessage((v) => !v)}
             className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             Send message
@@ -1330,13 +1398,29 @@ const AdminHouseShipmentDetail = () => {
           </button>
           <button
             type="button"
-            onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
+            onClick={() => setShowActivity(true)}
             className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             Schedule activity
           </button>
           <span className="ml-auto text-xs text-gray-400">0 Followers</span>
         </div>
+
+        {showMessage && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className={inputClass}
+              placeholder="Send a message to the followers of this shipment..."
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+            />
+            <button type="button" onClick={handleSendMessage} className="px-3 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-1">
+              <Send className="w-3.5 h-3.5" /> Send
+            </button>
+          </div>
+        )}
 
         {showLogNote && (
           <div className="flex gap-2">
@@ -1486,12 +1570,12 @@ const AdminHouseShipmentDetail = () => {
                 <div className="text-center text-sm text-gray-400 py-8">No documents available for this shipment.</div>
               )}
               <div className="flex justify-end">
-                <button
-                  onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg"
+                <label
+                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg cursor-pointer"
                 >
+                  <input type="file" className="hidden" onChange={handleUploadDocument} />
                   <Upload className="w-4 h-4" /> Upload Document
-                </button>
+                </label>
               </div>
             </div>
           </div>
@@ -1653,6 +1737,13 @@ const AdminHouseShipmentDetail = () => {
           </div>
         </div>
       )}
+    <ScheduleActivityModal
+      open={showActivity}
+      onClose={() => setShowActivity(false)}
+      resModel="house.shipment"
+      resId={id}
+      resName={form.jobNumber}
+    />
     </div>
   );
 };
