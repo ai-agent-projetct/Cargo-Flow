@@ -102,7 +102,31 @@ exports.getById = async (req, res, next) => {
 
     // The form shows a credit-limit banner when the customer is over.
     const limit = await creditLimitFor(rec);
-    return successResponse(res, { ...withMeta(rec), creditLimit: limit }, 'Record retrieved');
+
+    // Documents raised against this one. Credit and debit notes carry the
+    // original's number in reversedEntryName, which is what the smart buttons
+    // on the form count and link to.
+    const related = rec.name && rec.name !== '/'
+      ? await AccountMove.findAll({
+        where: { reversedEntryName: rec.name },
+        attributes: ['id', 'name', 'moveType', 'amountTotal', 'state'],
+        raw: true,
+      })
+      : [];
+    const sumOf = (types) => Math.round(related
+      .filter((r) => types.includes(r.moveType))
+      .reduce((a, r) => a + Number(r.amountTotal || 0), 0) * 100) / 100;
+
+    return successResponse(res, {
+      ...withMeta(rec),
+      creditLimit: limit,
+      related: {
+        creditNotes: related.filter((r) => ['out_refund', 'in_refund'].includes(r.moveType)),
+        debitNotes: related.filter((r) => ['out_debit', 'in_debit'].includes(r.moveType)),
+        creditTotal: sumOf(['out_refund', 'in_refund']),
+        debitTotal: sumOf(['out_debit', 'in_debit']),
+      },
+    }, 'Record retrieved');
   } catch (error) {
     next(error);
   }

@@ -62,7 +62,8 @@ const MoveList = ({ menu = 'invoices', title, moveType }) => {
   const [meta, setMeta] = useState({ total: 0, totals: { untaxed: 0, total: 0 } });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  // A smart button on a document links here with ?search=<number>.
+  const [search, setSearch] = useState(() => params.get('search') || '');
   const [facets, setFacets] = useState({ partners: [], journals: [], states: [], paymentStates: [] });
   const [filters, setFilters] = useState([]);
   const [groupBy, setGroupBy] = useState('');

@@ -134,6 +134,7 @@ const MoveDetail = ({ menu = 'invoices' }) => {
   const cols = LINE_COLUMNS.filter((c) => !c.shipmentOnly || fromShipment);
   const totals = totalsFor(lines);
   const cur = view.currency || 'AED';
+  const related = rec.related || { creditNotes: [], debitNotes: [], creditTotal: 0, debitTotal: 0 };
 
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const setLine = (i, key, value) =>
@@ -267,7 +268,7 @@ const MoveDetail = ({ menu = 'invoices' }) => {
       {!editing && !isNew && (
         <div className="flex items-center gap-2 mb-3">
           {a.confirm && <button onClick={() => run(() => accountingAPI.confirm(id), 'Entry posted')} disabled={busy} className={btn}>Confirm</button>}
-          <button className={ghost}>Preview</button>
+          <button onClick={() => window.print()} className={ghost}>Preview</button>
           {a.cancel && <button onClick={() => run(() => accountingAPI.cancel(id), 'Entry cancelled')} disabled={busy} className={ghost}>Cancel</button>}
           {a.resetToDraft && <button onClick={() => run(() => accountingAPI.resetToDraft(id), 'Reset to draft')} disabled={busy} className={ghost}>Reset to Draft</button>}
         </div>
@@ -297,13 +298,25 @@ const MoveDetail = ({ menu = 'invoices' }) => {
                 <span className="text-gray-800">Shipment</span>
               </button>
             )}
-            <button className="px-4 py-2 border border-gray-200 rounded text-sm text-left hover:bg-gray-50">
-              <span className="block text-blue-700">{money(0, cur)}</span>
-              <span className="text-gray-600 text-xs">Credit Note</span>
+            {/* Credit and debit notes raised against this document. The figures
+                come from the records themselves, and the button opens them. */}
+            <button
+              onClick={() => navigate(`/admin/accounting/${section}/credit-notes?search=${encodeURIComponent(rec.name || '')}`)}
+              disabled={!related.creditNotes.length}
+              className="px-4 py-2 border border-gray-200 rounded text-sm text-left hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white">
+              <span className="block text-blue-700">{money(related.creditTotal, cur)}</span>
+              <span className="text-gray-600 text-xs">
+                Credit Note{related.creditNotes.length ? ` (${related.creditNotes.length})` : ''}
+              </span>
             </button>
-            <button className="px-4 py-2 border border-gray-200 rounded text-sm text-left hover:bg-gray-50">
-              <span className="block text-blue-700">{money(0, cur)}</span>
-              <span className="text-gray-600 text-xs">Debit Notes</span>
+            <button
+              onClick={() => navigate(`/admin/accounting/${section}/debit-notes?search=${encodeURIComponent(rec.name || '')}`)}
+              disabled={!related.debitNotes.length}
+              className="px-4 py-2 border border-gray-200 rounded text-sm text-left hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white">
+              <span className="block text-blue-700">{money(related.debitTotal, cur)}</span>
+              <span className="text-gray-600 text-xs">
+                Debit Notes{related.debitNotes.length ? ` (${related.debitNotes.length})` : ''}
+              </span>
             </button>
           </div>
         )}

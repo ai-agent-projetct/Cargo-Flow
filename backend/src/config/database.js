@@ -2817,6 +2817,52 @@ const seedOperationsData = async () => {
       }
     }
 
+    // ── Point credit and debit notes at invoices that exist ──
+    // The seeded notes carry the demo's own reference numbers, which were never
+    // created here, so the smart buttons on an invoice counted nothing. Re-point
+    // each note at a real invoice for the same partner where one exists.
+    {
+      const { AccountMove } = require('../models');
+      const { Op } = require('sequelize');
+
+      const notes = await AccountMove.findAll({
+        where: { moveType: { [Op.in]: ['out_refund', 'out_debit', 'in_refund', 'in_debit'] } },
+      });
+      if (notes.length) {
+        const invoices = await AccountMove.findAll({
+          where: { moveType: { [Op.in]: ['out_invoice', 'in_invoice'] }, name: { [Op.ne]: '/' } },
+          attributes: ['name', 'partner', 'moveType'],
+          raw: true,
+        });
+        const existing = new Set(invoices.map((i) => i.name));
+        // Group the candidates by partner so a note lands on that partner's own
+        // invoice rather than an unrelated one.
+        const byPartner = new Map();
+        for (const inv of invoices) {
+          const key = `${inv.partner}|${inv.moveType}`;
+          if (!byPartner.has(key)) byPartner.set(key, []);
+          byPartner.get(key).push(inv.name);
+        }
+
+        let repaired = 0;
+        for (const note of notes) {
+          if (note.reversedEntryName && existing.has(note.reversedEntryName)) continue;
+          const wantType = note.moveType.startsWith('out_') ? 'out_invoice' : 'in_invoice';
+          const candidates = byPartner.get(`${note.partner}|${wantType}`);
+          if (!candidates?.length) continue;
+          // Spread the notes across that partner's invoices rather than piling
+          // them all onto the first one.
+          const pick = candidates[repaired % candidates.length];
+          await note.update({
+            reversedEntryName: pick,
+            ref: `${note.moveType.endsWith('_refund') ? 'Reversal of' : 'Against'}: ${pick}`,
+          });
+          repaired += 1;
+        }
+        if (repaired) console.log(`Re-pointed ${repaired} credit/debit notes at real invoices.`);
+      }
+    }
+
     // ── Link accounting partners to Organizations ──
     // Invoices, payments and pro formas store a partner as the display string
     // "A-13: Ashish" — customerCode, colon, name. Accounting's Customers and
