@@ -56,6 +56,15 @@ const RMSTariffDetail = () => {
   const [editing, setEditing] = useState(isNew);
   const [activeTab, setActiveTab] = useState(CHARGE_TABS[0].key);
   const [actionOpen, setActionOpen] = useState(false);
+  // The list this tariff belongs to, so the header arrows can step through it.
+  const [siblings, setSiblings] = useState([]);
+
+  useEffect(() => {
+    if (isNew) return;
+    rmsTariffsAPI.getAll({ limit: 200 })
+      .then((r) => setSiblings(r.data?.data || []))
+      .catch(() => setSiblings([]));
+  }, [isNew]);
   const actionRef = useRef(null);
 
   const setField = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -139,6 +148,13 @@ const RMSTariffDetail = () => {
 
   const lines = form[activeTab] || [];
 
+  // The record pager reads the same list the tariff came from.
+  const sibIndex = siblings.findIndex((x) => String(x.id) === String(id));
+  const step = (delta) => {
+    const next = siblings[sibIndex + delta];
+    if (next) navigate(`/admin/rms/tariffs/${next.id}`);
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="text-sm text-gray-500">
@@ -190,8 +206,17 @@ const RMSTariffDetail = () => {
         )}
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <button className="p-1 hover:bg-gray-100 rounded"><ChevronLeft className="w-4 h-4" /></button>
-          <button className="p-1 hover:bg-gray-100 rounded"><ChevronRight className="w-4 h-4" /></button>
+          {/* Step through the tariff list without going back to it. */}
+          <button onClick={() => step(-1)} disabled={sibIndex <= 0}
+            title={sibIndex <= 0 ? 'This is the first tariff' : 'Previous tariff'}
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 disabled:hover:bg-transparent">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button onClick={() => step(1)} disabled={sibIndex < 0 || sibIndex >= siblings.length - 1}
+            title={sibIndex >= siblings.length - 1 ? 'This is the last tariff' : 'Next tariff'}
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 disabled:hover:bg-transparent">
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

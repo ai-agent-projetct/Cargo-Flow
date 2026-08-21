@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useListView } from './useListView';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, FileText, ChevronLeft, SlidersHorizontal } from 'lucide-react';
@@ -45,6 +47,12 @@ const CFSTariffList = () => {
   // Filters / Group By / Favorites, applied to the rows below.
   const listView = useListView(filtered, { key: 'cfs-tariffs', groupFields: [] });
 
+  // Export the tariffs currently listed.
+  const handleExport = () => {
+    if (exportCsv(listView.rows, null, 'cfs-tariffs')) toast.success(`Exported ${listView.rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -61,7 +69,8 @@ const CFSTariffList = () => {
             >
               <Plus className="w-4 h-4" /> Create
             </button>
-            <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
+            <button onClick={handleExport} title="Export to CSV"
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
               <Download className="w-4 h-4" />
             </button>
           </div>
@@ -70,8 +79,10 @@ const CFSTariffList = () => {
             <SearchBar value={search} onChange={setSearch} placeholder="Search..." className="w-56" />
             {listView.controls}
             <span className="text-xs text-slate-500 whitespace-nowrap">1-{filtered.length}/{filtered.length}</span>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600"><ChevronLeft className="w-4 h-4" /></button>
-            <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 border border-slate-200"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
+            <button disabled title="All tariffs fit on one page"
+              className="p-1.5 text-slate-300 cursor-not-allowed"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={handleExport} title="Download this list"
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 border border-slate-200"><SlidersHorizontal className="w-3.5 h-3.5" /></button>
           </div>
         </div>
 

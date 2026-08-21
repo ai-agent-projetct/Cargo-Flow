@@ -297,7 +297,8 @@ const PurchaseOrderDetail = () => {
 
                 {!isNew && (
                   <>
-                    <button className="px-3 py-1.5 border border-gray-300 text-sm text-gray-700 rounded hover:bg-gray-50 flex items-center gap-1.5">
+                    <button onClick={() => window.print()}
+                      className="px-3 py-1.5 border border-gray-300 text-sm text-gray-700 rounded hover:bg-gray-50 flex items-center gap-1.5">
                       <Printer className="w-4 h-4" /> Print
                     </button>
                     <div className="relative" ref={actionRef}>
@@ -384,7 +385,11 @@ const PurchaseOrderDetail = () => {
         {/* Stat buttons */}
         {!isNew && (
           <div className="flex items-center gap-3 px-5 pt-4">
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+            {/* Opens the documents filed against this purchase order. */}
+            <button onClick={() => navigate(`/admin/documents?purchaseOrder=${encodeURIComponent(po.poNumber || '')}`)}
+              disabled={!po.documentCount}
+              title={po.documentCount ? 'Open the documents on this order' : 'No documents on this order yet'}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white">
               <FileText className="w-4 h-4 text-gray-500" />
               <span className="font-semibold text-gray-800">{po.documentCount || 0}</span>
               <span className="text-gray-500">Documents</span>
