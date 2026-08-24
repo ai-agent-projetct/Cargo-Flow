@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import api from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Circle, Download, FileText, Ship } from 'lucide-react';
 import { shipmentsAPI, trackingAPI } from '../../services/api';
@@ -59,6 +61,20 @@ const UserShipmentDetail = () => {
   const s = shipment;
   const completedCount = tracking.filter((t) => t.completed).length;
   const progress = tracking.length > 0 ? (completedCount / tracking.length) * 100 : 0;
+
+  const downloadDocument = async (doc) => {
+    if (!doc?.id) { toast.error('This document has no file attached'); return; }
+    try {
+      const res = await api.get(`/documents/${doc.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = doc.name || 'document';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not download that document');
+    }
+  };
 
   return (
     <div className="space-y-5 max-w-3xl mx-auto">
@@ -189,7 +205,8 @@ const UserShipmentDetail = () => {
                       <p className="text-xs text-slate-400">{doc.type} · {doc.size}</p>
                     </div>
                   </div>
-                  <button className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600">
+                  <button onClick={() => downloadDocument(doc)} title={`Download ${doc.name || 'document'}`}
+                    className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600">
                     <Download className="w-4 h-4" />
                   </button>
                 </div>

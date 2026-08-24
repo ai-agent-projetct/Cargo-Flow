@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Eye } from 'lucide-react';
 import { creditNotesAPI } from '../../services/api';
@@ -25,6 +26,7 @@ const mockCreditNotes = [
 ];
 
 const UserCreditNotes = () => {
+  const navigate = useNavigate();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,7 +78,8 @@ const UserCreditNotes = () => {
                     {Number(note.totalAmount || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {note.currency || 'MYR'}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button className="flex items-center gap-1.5 mx-auto px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors">
+                    <button onClick={() => navigate(`/user/credit-notes/${note.id}`)}
+                      className="flex items-center gap-1.5 mx-auto px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors">
                       <Eye className="w-3.5 h-3.5" />
                       View
                     </button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { downloadInvoicePdf } from '../../utils/invoicePdf';
 import { useNavigate } from 'react-router-dom';
 import { FileDown, AlertTriangle, Clock } from 'lucide-react';
 import { invoicesAPI } from '../../services/api';
@@ -205,7 +206,8 @@ const UserInvoices = () => {
                       {(inv.balanceAmount || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {inv.currency || 'MYR'}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Download PDF">
+                      <button onClick={() => downloadInvoicePdf(inv)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Download PDF">
                         <FileDown className="w-4 h-4" />
                       </button>
                     </td>

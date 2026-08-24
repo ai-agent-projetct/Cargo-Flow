@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import { authAPI } from '../../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Ship, Eye, EyeOff, ArrowRight, Package, Globe, Zap } from 'lucide-react';
@@ -14,7 +16,7 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || null;
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' },
   });
 
@@ -33,6 +35,19 @@ const Login = () => {
     { icon: Globe, text: 'Global freight rate management' },
     { icon: Zap, text: 'Real-time operational visibility' },
   ];
+
+  // Sends the reset mail through the endpoint the auth API already exposes.
+  const handleForgotPassword = async () => {
+    const address = (watch?.('email') || '').trim();
+    if (!address) { toast.error('Enter your email address first, then choose Forgot password'); return; }
+    try {
+      await authAPI.forgotPassword({ email: address });
+      toast.success(`If ${address} has an account, a reset link is on its way`);
+    } catch {
+      // Never reveal whether an address exists.
+      toast.success(`If ${address} has an account, a reset link is on its way`);
+    }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -136,7 +151,8 @@ const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-slate-700">Password</label>
-                <button type="button" className="text-xs text-primary-600 hover:text-primary-800 font-medium">
+                <button type="button" onClick={handleForgotPassword}
+                  className="text-xs text-primary-600 hover:text-primary-800 font-medium">
                   Forgot password?
                 </button>
               </div>

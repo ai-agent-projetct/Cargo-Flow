@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Package, Ship, FileText,
@@ -103,6 +104,40 @@ const AdminShipmentDetail = () => {
   if (!shipment) return <div className="text-center py-16 text-slate-400">Shipment not found</div>;
 
   const s = shipment;
+
+  // Documents attach to this shipment through the shared documents store, so
+  // they show up wherever else the shipment's files are listed.
+  const handleUploadDocument = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const body = new FormData();
+    body.append('file', file);
+    body.append('name', file.name);
+    body.append('documentType', 'other');
+    body.append('shipmentId', id);
+    try {
+      await api.post('/documents', body, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success(`${file.name} uploaded`);
+      fetchShipment();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Upload failed');
+    }
+  };
+
+  const downloadDocument = async (doc) => {
+    if (!doc?.id) { toast.error('This document has no file attached'); return; }
+    try {
+      const res = await api.get(`/documents/${doc.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url; a.download = doc.name || 'document';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not download that document');
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -266,9 +301,10 @@ const AdminShipmentDetail = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-semibold text-slate-900">Documents</h3>
-            <button className="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
+            <label className="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium cursor-pointer">
+              <input type="file" className="hidden" onChange={handleUploadDocument} />
               <Upload className="w-4 h-4" /> Upload
-            </button>
+            </label>
           </div>
           {(s.documents || []).length === 0 ? (
             <div className="text-center py-10 text-slate-400">
@@ -288,7 +324,8 @@ const AdminShipmentDetail = () => {
                       <p className="text-xs text-slate-400">{doc.type} · {doc.size} · {formatDate(doc.uploaded_at)}</p>
                     </div>
                   </div>
-                  <button className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                  <button onClick={() => downloadDocument(doc)} title={`Download ${doc.name || 'document'}`}
+                    className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
                     <Download className="w-4 h-4" />
                   </button>
                 </div>

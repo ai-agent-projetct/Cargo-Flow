@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { downloadInvoicePdf } from '../../utils/invoicePdf';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Mail, CheckCircle, Edit, Printer } from 'lucide-react';
 import { invoicesAPI } from '../../services/api';
@@ -83,6 +84,16 @@ const AdminInvoiceDetail = () => {
 
   const inv = invoice;
 
+  // Render this invoice as a PDF from the record on screen.
+  const handleDownloadPdf = () => {
+    try {
+      downloadInvoicePdf(inv);
+      toast.success('Invoice PDF downloaded');
+    } catch {
+      toast.error('Could not build the PDF');
+    }
+  };
+
   return (
     <div className="space-y-5 max-w-4xl mx-auto">
       {/* Toolbar */}
@@ -110,7 +121,8 @@ const AdminInvoiceDetail = () => {
           <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">
+          <button onClick={handleDownloadPdf}
+            className="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">
             <Download className="w-4 h-4" /> PDF
           </button>
         </div>

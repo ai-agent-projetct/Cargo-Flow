@@ -28,6 +28,17 @@ const OrganizationChatter = ({
   const client = api || organizationsAPI;
   const [composing, setComposing] = useState(null); // 'message' | 'note' | null
   const [showActivity, setShowActivity] = useState(false);
+  // Following a record is remembered per record, the way the source system
+  // keeps a follower list against the document.
+  const followKey = `cargoflo.follow.${resModel}.${organizationId}`;
+  const [following, setFollowing] = useState(() => !!localStorage.getItem(followKey));
+
+  const toggleFollow = () => {
+    if (following) { localStorage.removeItem(followKey); setFollowing(false); toast('You are no longer following this record'); return; }
+    localStorage.setItem(followKey, '1');
+    setFollowing(true);
+    toast.success('You are now following this record');
+  };
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -83,7 +94,10 @@ const OrganizationChatter = ({
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1"><Paperclip className="w-3.5 h-3.5" /> 0</span>
-          <button className="hover:text-gray-700">Follow</button>
+          <button onClick={toggleFollow}
+            className={`hover:text-gray-700 ${following ? 'text-blue-700 font-medium' : ''}`}>
+            {following ? 'Following' : 'Follow'}
+          </button>
           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {followerCount}</span>
         </div>
       </div>

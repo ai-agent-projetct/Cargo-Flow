@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Search, Download } from 'lucide-react';
 import { organizationsAPI } from '../../../services/api';
@@ -55,6 +57,12 @@ const OrganizationRelated = () => {
     ? data.rows.filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()))
     : data.rows;
 
+  // Export the related records currently listed.
+  const handleExport = () => {
+    if (exportCsv(rows, null, `organization-${type || 'related'}`)) toast.success(`Exported ${rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="text-sm text-gray-500">
@@ -67,7 +75,7 @@ const OrganizationRelated = () => {
       <WorkflowRibbon steps={workflow} organizationId={id} currentStep={type} />
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-        <button className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
+        <button onClick={handleExport} className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50" title="Export">
           <Download className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-3">
