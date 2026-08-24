@@ -283,7 +283,9 @@ const DepartmentForm = () => {
 
         <div>
           <div className="flex items-center gap-1 border-b border-slate-200">
-            <button className="px-4 py-2 text-sm font-medium border-b-2 border-primary-600 text-primary-600 -mb-px">
+            <button type="button" role="tab" aria-selected="true" aria-current="page"
+              title="Access Rights is the only tab on this form"
+              className="px-4 py-2 text-sm font-medium border-b-2 border-primary-600 text-primary-600 -mb-px cursor-default">
               Access Rights
             </button>
           </div>

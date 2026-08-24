@@ -93,7 +93,11 @@ const FreightProductDetail = () => {
           </div>
 
           <div className="mt-4">
-            <button className="inline-flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50">
+            {/* Opens the products this master record covers. */}
+            <button onClick={() => navigate(`/admin/accounting/customers/products?search=${encodeURIComponent(item.name || '')}`)}
+              disabled={!item.recordCount}
+              title={item.recordCount ? 'Open these records' : 'No records use this yet'}
+              className="inline-flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white">
               <span>→</span> {item.recordCount} record(s)
             </button>
           </div>

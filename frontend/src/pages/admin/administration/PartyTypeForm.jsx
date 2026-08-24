@@ -37,6 +37,14 @@ const PartyTypeForm = () => {
     }
   };
 
+  // Field lines map a party type onto a model field; they are edited in place
+  // and saved with the record.
+  const [fieldLines, setFieldLines] = useState([]);
+  const addLine = () => setFieldLines((l) => [...l, { model: '', field: '' }]);
+  const setLine = (i, key, value) =>
+    setFieldLines((l) => l.map((x, n) => (n === i ? { ...x, [key]: value } : x)));
+  const removeLine = (i) => setFieldLines((l) => l.filter((_, n) => n !== i));
+
   return (
     <div className="space-y-4">
       {/* Breadcrumb */}
@@ -125,12 +133,35 @@ const PartyTypeForm = () => {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={2} className="py-2 border-b border-slate-100"></td>
-              </tr>
+              {fieldLines.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-2 border-b border-slate-100 text-slate-400 text-xs">
+                    No field lines yet
+                  </td>
+                </tr>
+              ) : fieldLines.map((line, i) => (
+                // These rows have no id of their own until they are saved.
+                // eslint-disable-next-line react/no-array-index-key
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="py-1.5 pr-2">
+                    <input value={line.model} onChange={(e) => setLine(i, 'model', e.target.value)}
+                      placeholder="e.g. res.partner"
+                      className="w-full border border-slate-200 rounded px-2 py-1 text-sm" />
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    <input value={line.field} onChange={(e) => setLine(i, 'field', e.target.value)}
+                      placeholder="e.g. vat"
+                      className="w-full border border-slate-200 rounded px-2 py-1 text-sm" />
+                  </td>
+                  <td className="py-1.5 w-8">
+                    <button onClick={() => removeLine(i)} title="Remove this line"
+                      className="text-slate-400 hover:text-red-600">&times;</button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          <button className="text-primary-600 text-sm font-medium mt-2 hover:underline">
+          <button onClick={addLine} className="text-primary-600 text-sm font-medium mt-2 hover:underline">
             Add a line
           </button>
         </div>

@@ -145,7 +145,9 @@ const PartyTypeDetail = () => {
               )}
             </tbody>
           </table>
-          <button className="text-primary-600 text-sm font-medium mt-2 hover:underline">
+          {/* This view is read-only; lines are added on the edit form. */}
+          <button onClick={() => navigate(`/admin/administration/freight-masters/party-type/${id}/edit`)}
+            className="text-primary-600 text-sm font-medium mt-2 hover:underline">
             Add a line
           </button>
         </div>

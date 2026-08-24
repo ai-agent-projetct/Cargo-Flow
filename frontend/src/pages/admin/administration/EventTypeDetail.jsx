@@ -125,7 +125,9 @@ const EventTypeDetail = () => {
         {/* Tabs */}
         <div className="border-t border-slate-100 pt-4">
           <div className="flex items-center gap-4 border-b border-slate-100 mb-3">
-            <button className="text-sm font-semibold pb-2 text-primary-600 border-b-2 border-primary-600">
+            <button type="button" role="tab" aria-selected="true" aria-current="page"
+              title="Summary is the only tab on this record"
+              className="text-sm font-semibold pb-2 text-primary-600 border-b-2 border-primary-600 cursor-default">
               Summary
             </button>
           </div>

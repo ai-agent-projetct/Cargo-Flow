@@ -224,7 +224,10 @@ const FreightBookingSettings = () => {
                         <Field f={f} value={values[f.key]} onChange={(v) => set(f.key, v)} />
                       </div>
                       {f.kind === 'select' && (
-                        <button className="mt-2 text-blue-700 hover:text-blue-900" title="Open">
+                        <button type="button"
+                          onClick={() => window.open(f.manageAt || '/admin/administration', '_blank', 'noopener')}
+                          className="mt-2 text-blue-700 hover:text-blue-900"
+                          title={`Manage the ${f.label || 'options'} list`}>
                           <ExternalLink className="w-4 h-4" />
                         </button>
                       )}

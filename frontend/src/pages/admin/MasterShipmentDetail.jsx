@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { exportCsv } from '../../utils/exportCsv';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Save, X, ChevronDown, Pencil, MoreHorizontal, Printer, Trash2, Copy,
@@ -428,6 +429,13 @@ const MasterShipmentDetail = () => {
     { key: 'profitability', icon: BarChart3, label: 'View Profitability', value: '' },
   ];
 
+  // Export the shipments the attach search is currently showing.
+  const exportAttachSearch = () => {
+    const rows = availableHouses || [];
+    if (exportCsv(rows, null, 'attachable-house-shipments')) toast.success(`Exported ${rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="p-6 space-y-4 max-w-7xl mx-auto">
       {/* Top toolbar */}
@@ -817,7 +825,8 @@ const MasterShipmentDetail = () => {
                   onChange={(e) => handleAttachSearchChange(e.target.value)}
                 />
               </div>
-              <button className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50">
+              <button onClick={exportAttachSearch} title="Export these results"
+                className="p-2 border border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50">
                 <Download className="w-4 h-4" />
               </button>
             </div>
