@@ -97,7 +97,8 @@ const AdminVendorBills = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                    <button onClick={() => navigate(`/admin/accounting/vendors/bills/${b.id}`)} title="Open this vendor bill"
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                       <Eye className="w-4 h-4" />
                     </button>
                   </td>

@@ -55,6 +55,9 @@ const PartnerList = ({ kind = 'customer' }) => {
   const [scope, setScope] = useState(true);
   const [companyType, setCompanyType] = useState('');
   const [view, setView] = useState('kanban');
+  // Group the partner cards by a field on the record.
+  const [groupBy, setGroupBy] = useState('');
+  const [groupOpen, setGroupOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
 
@@ -86,6 +89,36 @@ const PartnerList = ({ kind = 'customer' }) => {
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
   const open = (o) => navigate(`/admin/organizations/${o.id}`);
+
+  const Card = ({ o }) => (
+          <button onClick={() => open(o)}
+            className="bg-white border border-gray-200 rounded-lg p-3 text-left hover:shadow-sm flex gap-3">
+            <div className="w-11 h-11 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-500 text-xs font-semibold">
+              {o.image ? <img src={o.image} alt="" className="w-11 h-11 rounded object-cover" />
+                : (o.companyType === 'person' ? <User className="w-5 h-5" /> : initials(o.name) || <Building2 className="w-5 h-5" />)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-900 text-sm truncate">{displayName(o)}</p>
+              <p className="text-xs text-gray-500 truncate">
+                {[o.city, o.state, o.country].filter(Boolean).join(', ') || ' '}
+              </p>
+              {o.email && (
+                <p className="text-xs text-blue-700 truncate flex items-center gap-1 mt-0.5">
+                  <Mail className="w-3 h-3 flex-shrink-0" /> {o.email}
+                </p>
+              )}
+              {/* Party types render as the demo's coloured dots. */}
+              {(o.partyTypes || []).length > 0 && (
+                <span className="flex flex-wrap gap-1 mt-1.5">
+                  {o.partyTypes.map((p) => (
+                    <span key={p} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${partyTypeClass(p)}`}>{p}</span>
+                  ))}
+                </span>
+              )}
+            </div>
+          </button>
+  );
+
 
   return (
     <div className="px-6 pb-6">
@@ -143,7 +176,22 @@ const PartnerList = ({ kind = 'customer' }) => {
             )}
           </div>
 
-          <button className="flex items-center gap-1 hover:text-gray-900"><Layers className="w-3.5 h-3.5" /> Group By</button>
+          <div className="relative">
+            <button onClick={() => setGroupOpen(!groupOpen)}
+              className={`flex items-center gap-1 hover:text-gray-900 ${groupBy ? 'text-blue-700' : ''}`}>
+              <Layers className="w-3.5 h-3.5" /> Group By
+            </button>
+            {groupOpen && (
+              <div className="absolute right-0 top-7 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                {[['', 'None'], ['country', 'Country'], ['city', 'City'], ['companyType', 'Type']].map(([k, label]) => (
+                  <button key={k || 'none'} onClick={() => { setGroupBy(k); setGroupOpen(false); }}
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${groupBy === k ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button onClick={() => toolbar.toggleFavorite({ search })}
             className={`flex items-center gap-1 hover:text-gray-900 ${toolbar.favorite ? 'text-amber-500' : ''}`}>
             <Star className={`w-3.5 h-3.5 ${toolbar.favorite ? 'fill-amber-400' : ''}`} /> Favorites
@@ -184,37 +232,28 @@ const PartnerList = ({ kind = 'customer' }) => {
         </div>
       </div>
 
-      {loading ? <PageLoader /> : view === 'kanban' ? (
+      {loading ? <PageLoader /> : view === 'kanban' && groupBy ? (
+        <div className="space-y-5">
+          {[...rows.reduce((m, o) => {
+            const label = String(o[groupBy] ?? '') || 'Undefined';
+            if (!m.has(label)) m.set(label, []);
+            m.get(label).push(o);
+            return m;
+          }, new Map()).entries()].sort(([a], [b]) => a.localeCompare(b)).map(([label, list]) => (
+            <div key={label}>
+              <div className="text-xs font-semibold text-gray-600 uppercase mb-2">{label} ({list.length})</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {list.map((o) => <Card key={o.id} o={o} />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : view === 'kanban' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {rows.length === 0 ? (
             <p className="col-span-full text-center py-10 text-gray-400">No records found</p>
           ) : rows.map((o) => (
-            <button key={o.id} onClick={() => open(o)}
-              className="bg-white border border-gray-200 rounded-lg p-3 text-left hover:shadow-sm flex gap-3">
-              <div className="w-11 h-11 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-500 text-xs font-semibold">
-                {o.image ? <img src={o.image} alt="" className="w-11 h-11 rounded object-cover" />
-                  : (o.companyType === 'person' ? <User className="w-5 h-5" /> : initials(o.name) || <Building2 className="w-5 h-5" />)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-gray-900 text-sm truncate">{displayName(o)}</p>
-                <p className="text-xs text-gray-500 truncate">
-                  {[o.city, o.state, o.country].filter(Boolean).join(', ') || ' '}
-                </p>
-                {o.email && (
-                  <p className="text-xs text-blue-700 truncate flex items-center gap-1 mt-0.5">
-                    <Mail className="w-3 h-3 flex-shrink-0" /> {o.email}
-                  </p>
-                )}
-                {/* Party types render as the demo's coloured dots. */}
-                {(o.partyTypes || []).length > 0 && (
-                  <span className="flex flex-wrap gap-1 mt-1.5">
-                    {o.partyTypes.map((p) => (
-                      <span key={p} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${partyTypeClass(p)}`}>{p}</span>
-                    ))}
-                  </span>
-                )}
-              </div>
-            </button>
+            <Card key={o.id} o={o} />
           ))}
         </div>
       ) : (

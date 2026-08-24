@@ -136,6 +136,15 @@ const CalendarPage = () => {
     else toast.error('Nothing to export');
   };
 
+  // Remember the calendar view the user prefers to come back to.
+  const [favourite, setFavourite] = useState(() => !!localStorage.getItem('cargoflo.fav.calendar'));
+  const toggleFavourite = () => {
+    if (favourite) { localStorage.removeItem('cargoflo.fav.calendar'); setFavourite(false); toast('Removed from favourites'); return; }
+    localStorage.setItem('cargoflo.fav.calendar', JSON.stringify({ scale, mode }));
+    setFavourite(true);
+    toast.success('Saved this calendar view');
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Calendar</h1>
@@ -239,8 +248,11 @@ const CalendarPage = () => {
             )}
           </div>
 
-          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
-            <Star className="w-3.5 h-3.5" /> Favorites
+          <button onClick={toggleFavourite}
+            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded text-sm hover:bg-gray-50 ${
+              favourite ? 'border-amber-300 text-amber-600 bg-amber-50' : 'border-gray-300 text-gray-700'
+            }`}>
+            <Star className={`w-3.5 h-3.5 ${favourite ? 'fill-amber-400' : ''}`} /> Favorites
           </button>
 
           <div className="flex border border-gray-300 rounded overflow-hidden">

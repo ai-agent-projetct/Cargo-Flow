@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { exportCsv } from '../../../utils/exportCsv';
 import { useListView } from './useListView';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Download, FileText } from 'lucide-react';
@@ -41,6 +43,12 @@ const TariffList = ({ tariffType, basePath }) => {
   // Filters / Group By / Favorites, applied to the rows below.
   const listView = useListView(filtered, { key: 'tariffs', groupFields: [{ key: 'tariffType', label: 'Type' }, { key: 'currency', label: 'Currency' }] });
 
+  // Export the tariffs currently listed.
+  const handleExport = () => {
+    if (exportCsv(listView.rows, null, 'tariffs')) toast.success(`Exported ${listView.rows.length} rows`);
+    else toast.error('Nothing to export');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -52,7 +60,8 @@ const TariffList = ({ tariffType, basePath }) => {
           >
             <Plus className="w-4 h-4" /> Create
           </button>
-          <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
+          <button onClick={handleExport} title="Export to CSV"
+            className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 border border-slate-200">
             <Download className="w-4 h-4" />
           </button>
         </div>
