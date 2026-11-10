@@ -711,7 +711,17 @@ REPORTS['ph-withholding'] = withholding(2, 'Withholding Tax Report');
 // the Accounting menu exposes under Ledgers.
 REPORTS['general-ledger-report'] = REPORTS['general-ledger'];
 
-const listReports = () => Object.entries(REPORTS).map(([id, r]) => ({ id, title: r.title }));
+// Operations, Sales & CRM and ETL reports. They live in their own module
+// because they read shipments, quotes and charge lines rather than journal
+// entries, but they share this engine so every one renders in ReportView.
+Object.assign(REPORTS, require('./freightReports').FREIGHT_REPORTS);
+
+// The ACL model a report reads. Accounting reports read journal entries, so
+// they default to `invoice`; the freight reports declare their own.
+const aclFor = (id) => (REPORTS[id] && REPORTS[id].acl) || 'invoice';
+
+const listReports = () => Object.entries(REPORTS)
+  .map(([id, r]) => ({ id, title: r.title, acl: r.acl || 'invoice' }));
 
 const runReport = async (id, ctx) => {
   const report = REPORTS[id];
@@ -720,4 +730,4 @@ const runReport = async (id, ctx) => {
   return { id, title: report.title, ...result };
 };
 
-module.exports = { REPORTS, runReport, listReports };
+module.exports = { REPORTS, runReport, listReports, aclFor };

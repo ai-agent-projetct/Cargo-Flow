@@ -575,6 +575,51 @@ const seedSalesData = async () => {
       }
     }
 
+    // --- 8a. customer visits on opportunities -----------------------------
+    // The Customer Visit report reads these. Guarded on "nobody has any", so
+    // a visit a user records by hand is never overwritten.
+    const allOpps = await Opportunity.findAll({ order: [['createdAt', 'ASC']] });
+    const anyVisits = allOpps.some((o) => Array.isArray(o.customerVisits) && o.customerVisits.length);
+    if (!anyVisits && allOpps.length) {
+      const purposes = [
+        'Introductory meeting and capability presentation',
+        'Rate discussion for the annual tender',
+        'Site visit to review loading and packing',
+        'Service review after the first shipments',
+        'Negotiation on free time and payment terms',
+      ];
+      const outcomes = [
+        'Interested; asked for a door-to-door rate',
+        'Shared volumes; rate request raised to vendors',
+        'Agreed to a trial shipment next month',
+        'Price-sensitive; competitor quoting 6% lower',
+        'Positive; awaiting their procurement approval',
+      ];
+      const next = [
+        'Send quotation by Thursday',
+        'Follow up after vendor rates arrive',
+        'Book the trial shipment',
+        'Re-quote with an alternative routing',
+        'Call procurement next week',
+      ];
+      for (let i = 0; i < allOpps.length; i += 1) {
+        const o = allOpps[i];
+        const count = 1 + (i % 3);
+        const visits = [];
+        for (let k = 0; k < count; k += 1) {
+          const n = i + k;
+          visits.push({
+            date: iso(daysFrom(today, -90 + n * 6)),
+            visitedBy: pick(users, n) ? (pick(users, n).name || pick(users, n).email) : 'Sales',
+            purpose: pick(purposes, n),
+            outcome: pick(outcomes, n),
+            nextAction: pick(next, n),
+          });
+        }
+        await o.update({ customerVisits: visits });
+      }
+    }
+
     // --- 8b. cargo figures on quotes and shipments that have none ----------
     // A per-kg or per-CBM charge against a null weight bills zero, which made
     // an air export job look like it earned a few hundred dirhams. Filling
@@ -1088,6 +1133,75 @@ const backfillJobCargo = async (models) => {
   }
 
   if (filled) console.log(`  cargo figures filled on ${filled} house shipment(s)`);
+
+  await backfillCarriersAndContainers(models);
+};
+
+// Container owner prefixes by shipping line. The SCAC (e.g. CMDU) and the
+// container owner code (CMAU) are different registers, so this is a lookup
+// rather than a reuse of the carrier code.
+const OWNER_PREFIX = {
+  'CMA CGM': 'CMAU',
+  'Evergreen Marine': 'EGHU',
+  'Maersk Line': 'MSKU',
+  'MSC (Mediterranean Shipping Company)': 'MSCU',
+};
+
+/**
+ * Give every shipment a carrier and every full-container sea shipment its
+ * container numbers. Older shipments were seeded without either, which left
+ * the shipping-line and TEU reports with one "Not set" row and flagged every
+ * FCL job as a data discrepancy. Only empty fields are filled, and container
+ * numbers carry a valid ISO 6346 check digit.
+ */
+const backfillCarriersAndContainers = async (models) => {
+  const { FFJob, Carrier } = models;
+  const { make } = require('../utils/containerNumber');
+
+  const carriers = await Carrier.findAll({ order: [['name', 'ASC']], raw: true });
+  const byType = (t) => carriers.filter((c) => c.type === t);
+  const lines = byType('shipping_line');
+  const airlines = byType('airline');
+  const truckers = byType('trucking');
+  if (!carriers.length) return;
+
+  const jobs = await FFJob.findAll({
+    attributes: ['id', 'jobNumber', 'transportMode', 'cargoType', 'carrier', 'containerNumbers'],
+  });
+
+  let carriersSet = 0;
+  let boxesSet = 0;
+  for (const j of jobs) {
+    const mode = String(j.transportMode || '').toUpperCase();
+    const u = hashUnit(j.jobNumber || j.id);
+    const patch = {};
+
+    let carrierName = j.carrier;
+    if (!carrierName) {
+      const pool = mode === 'SEA' ? lines : (mode === 'AIR' || mode === 'COURIER') ? airlines : truckers;
+      const chosen = pool.length ? pool[Math.floor(u * pool.length) % pool.length] : null;
+      if (chosen) {
+        carrierName = chosen.name;
+        patch.carrier = chosen.name;
+        carriersSet += 1;
+      }
+    }
+
+    const hasBoxes = Array.isArray(j.containerNumbers) && j.containerNumbers.length;
+    if (!hasBoxes && mode === 'SEA' && String(j.cargoType).toUpperCase() === 'FCL') {
+      // One to three boxes, weighted towards one, the way FCL bookings run.
+      const count = u < 0.6 ? 1 : (u < 0.88 ? 2 : 3);
+      const prefix = OWNER_PREFIX[carrierName] || 'CFXU';
+      const base = Math.floor(u * 900000) + 100000;
+      patch.containerNumbers = Array.from({ length: count }, (_, i) => make(prefix, base + i * 17));
+      boxesSet += 1;
+    }
+
+    if (Object.keys(patch).length) await j.update(patch);
+  }
+  if (carriersSet || boxesSet) {
+    console.log(`  carriers set on ${carriersSet} shipment(s), containers on ${boxesSet}`);
+  }
 };
 
 /**

@@ -24,6 +24,16 @@ import CrmLayout from './pages/admin/crm/CrmLayout';
 
 // Accounting: post-dated cheques
 import PdcPayments from './pages/admin/accounting/PdcPayments';
+import ReportViewForOps from './pages/admin/accounting/ReportView';
+import { useParams as useRouteParams } from 'react-router-dom';
+
+// Reads the report id from the URL and hands it to the shared ReportView.
+// Keyed on the id so moving between reports starts each one fresh.
+const OpsReport = () => {
+  const { reportId } = useRouteParams();
+  const title = reportId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return <ReportViewForOps key={reportId} reportId={reportId} title={title} />;
+};
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -175,6 +185,10 @@ function App() {
 
               {/* Sales & CRM — the funnel ahead of the quote */}
               <Route path="crm/*" element={<CrmLayout />} />
+
+              {/* Operations, Sales and ETL reports from the shared report
+                  engine; the id in the path picks the report. */}
+              <Route path="ops-reports/:reportId" element={<OpsReport />} />
 
               {/* Dashboard variants */}
               <Route path="dashboard" element={<AdminDashboard />} />

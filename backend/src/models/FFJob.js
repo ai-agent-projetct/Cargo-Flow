@@ -337,8 +337,12 @@ const FFJob = sequelize.define('FFJob', {
         const { Op } = require('sequelize');
         const year = new Date().getFullYear();
 
-        const modeCode = { AIR: 'AIR', SEA: 'SEA', ROAD: 'ROA', RAIL: 'RAIL' }[job.transportMode] || 'SEA';
-        const dirCode = { EXPORT: 'E', IMPORT: 'I', LOCAL: 'L' }[job.direction] || 'E';
+        // COURIER, MULTIMODAL and CROSS_TRADE were added to the enums with the
+        // multimodal work; without codes here they numbered as SEA / Export.
+        const modeCode = {
+          AIR: 'AIR', SEA: 'SEA', ROAD: 'ROA', RAIL: 'RAIL', COURIER: 'CRR', MULTIMODAL: 'MMD',
+        }[job.transportMode] || 'SEA';
+        const dirCode = { EXPORT: 'E', IMPORT: 'I', LOCAL: 'L', CROSS_TRADE: 'X' }[job.direction] || 'E';
         const cargoCode = job.cargoType || 'FCL';
         const svcCode = job.serviceType || 'H';
 
@@ -350,6 +354,32 @@ const FFJob = sequelize.define('FFJob', {
         });
         const seq = String(count + 1).padStart(5, '0');
         job.jobNumber = `${modeCode}-${dirCode}-${cargoCode}-${svcCode}-${year}-${seq}`;
+      }
+    },
+
+    // A container number goes onto the bill of lading, so a mistyped one is
+    // refused here rather than discovered at the port. Only numbers being
+    // added are checked: a shipment already holding a legacy number that fails
+    // the check digit can still be edited, it just cannot gain another bad one.
+    beforeSave: (job) => {
+      if (!job.changed('containerNumbers')) return;
+      const { validate } = require('../utils/containerNumber');
+      const before = new Set(
+        (job.previous('containerNumbers') || []).map((c) => String(c && (c.number || c)).toUpperCase()),
+      );
+      const now = Array.isArray(job.containerNumbers) ? job.containerNumbers : [];
+      const problems = now
+        .map((c) => (c && typeof c === 'object' ? c.number || c.containerNumber : c))
+        .filter((n) => n && !before.has(String(n).toUpperCase()))
+        .map((n) => ({ n, r: validate(n) }))
+        .filter((x) => !x.r.valid);
+      if (problems.length) {
+        const err = new Error(
+          `Invalid container number${problems.length > 1 ? 's' : ''}: `
+          + problems.map((p) => `${p.n} (${p.r.reason})`).join('; '),
+        );
+        err.statusCode = 422;
+        throw err;
       }
     },
   },

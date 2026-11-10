@@ -21,6 +21,22 @@ const ContainerNumber = sequelize.define('ContainerNumber', {
   linkedShipmentNumber: { type: DataTypes.STRING(60), allowNull: true },
 }, {
   tableName: 'container_numbers',
+  hooks: {
+    // Refuse a number that fails the ISO 6346 check digit when it is first
+    // entered or changed. An existing row is left alone so its status can
+    // still be updated.
+    beforeSave: (rec) => {
+      if (!rec.changed('containerNumber')) return;
+      const { validate } = require('../utils/containerNumber');
+      const r = validate(rec.containerNumber);
+      if (!r.valid) {
+        const err = new Error(`Invalid container number ${rec.containerNumber}: ${r.reason}`);
+        err.statusCode = 422;
+        throw err;
+      }
+      rec.containerNumber = r.normalised;
+    },
+  },
 });
 
 module.exports = ContainerNumber;
