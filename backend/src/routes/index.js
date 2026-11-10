@@ -56,6 +56,11 @@ const shipmentSharingRoutes = require('./shipmentSharings');
 const ocrDocumentRoutes = require('./ocrDocuments');
 const containerNumberRoutes = require('./containerNumbers');
 const masterDataRoutes = require('./masterData');
+const crmRoutes = require('./crm');
+const chargeLineRoutes = require('./chargeLines');
+const quoteLegRoutes = require('./quoteLegs');
+const rateRequestRoutes = require('./rateRequests');
+const pdcPaymentRoutes = require('./pdcPayments');
 
 // Middleware to inject socket.io into req
 const injectIO = (io) => (req, res, next) => {
@@ -122,6 +127,15 @@ const registerRoutes = (app, io) => {
   app.use('/api/ocr-documents', ocrDocumentRoutes);
   app.use('/api/container-numbers', containerNumberRoutes);
   app.use('/api/master-data', masterDataRoutes);
+  // Sales & CRM: prospects, leads, stages, teams, targets, quote templates.
+  app.use('/api/crm', crmRoutes);
+  // Charge lines behind every quote, shipment, service job and pro forma.
+  app.use('/api/charge-lines', chargeLineRoutes);
+  // Multimodal quote legs.
+  app.use('/api/quote-legs', quoteLegRoutes);
+  // Vendor rate requests, including the token-authenticated vendor portal.
+  app.use('/api/rate-requests', rateRequestRoutes);
+  app.use('/api/accounting/pdc', pdcPaymentRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {

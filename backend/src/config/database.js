@@ -40,10 +40,17 @@ const connectDB = async () => {
     await ensureCFSTariffsTable();
     await ensureFFJobsSchema();
     await ensureOperationsTables();
+    // Sales & CRM / costing / vendor-rate wave. Separate module because it
+    // creates its tables from the models themselves rather than hand-written
+    // DDL; see salesWave.js for why that is safe here.
+    const { ensureSalesTables } = require('./salesWave');
+    await ensureSalesTables(sequelize);
     await seedIncoterms();
     await seedDepartments();
     await seedMasterData();
     await seedOperationsData();
+    const { seedSalesData } = require('./seedSalesData');
+    await seedSalesData();
   } catch (error) {
     console.error('Unable to connect to database:', error.message);
     process.exit(1);

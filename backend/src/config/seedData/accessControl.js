@@ -55,6 +55,17 @@ const MODELS = [
   ['product', 'Product'],
   ['rms.tariff', 'Tariff'],
   ['app.settings', 'Settings'],
+  // Sales & CRM funnel, costing and vendor pricing.
+  ['crm.prospect', 'Prospect'],
+  ['crm.prospect.lead', 'Lead'],
+  ['crm.prospect.opportunity', 'Opportunity'],
+  ['crm.stage', 'CRM Stage'],
+  ['crm.team', 'Sales Team'],
+  ['crm.sale.target', 'Sales Target'],
+  ['shipment.quote.template', 'Quote Template'],
+  ['charge.line', 'Charge Line'],
+  ['rate.request', 'Rate Request'],
+  ['pdc.payment', 'Post Dated Cheque'],
 ];
 
 // perms string is RWCD, e.g. '1110' = read+write+create, no delete.
@@ -175,6 +186,98 @@ const ACL = {
   'app.settings': [
     ['Administration / Settings', '1111'],
     ['Administration / Access Rights', '1100'],
+  ],
+
+  // --- Sales & CRM funnel --------------------------------------------------
+  // The funnel belongs to sales: they create and work it, operations can see
+  // it so they know what is coming, and nobody else needs it.
+  'crm.prospect': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1111'],
+    ['Sales & CRM / Salesman', '1110'],
+    ['Extra Rights / Contact Creation', '1110'],
+    ['Operations / Administrator', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'crm.prospect.lead': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1111'],
+    ['Sales & CRM / Salesman', '1110'],
+    ['Operations / Administrator', '1000'],
+    ['Operations / Operation Manager', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'crm.prospect.opportunity': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1111'],
+    ['Sales & CRM / Salesman', '1110'],
+    ['Operations / Administrator', '1100'],
+    ['Operations / Operation Manager', '1000'],
+    ['Pricing / Manage Pricing', '1100'],
+    ['Administration / Settings', '1111'],
+  ],
+  // Stages and teams are configuration: a salesman works the pipeline but
+  // does not get to redefine it.
+  'crm.stage': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1100'],
+    ['Sales & CRM / Salesman', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'crm.team': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1110'],
+    ['Sales & CRM / Salesman', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  // A salesperson may read their own target but not set it.
+  'crm.sale.target': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1110'],
+    ['Sales & CRM / Salesman', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'shipment.quote.template': [
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1100'],
+    ['Sales & CRM / Salesman', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+
+  // --- costing -------------------------------------------------------------
+  // Charge lines are where cost and margin live, so write access is the
+  // pricing and operations desks plus billing for the invoicing side. Sales
+  // can read them to see what a job earned, and the portal can see nothing.
+  'charge.line': [
+    ['Pricing / Manage Pricing', '1111'],
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1110'],
+    ['Operations / Associate', '1100'],
+    ['Invoicing / Billing Administrator', '1111'],
+    ['Invoicing / Billing', '1110'],
+    ['Sales & CRM / Sales Administrator', '1100'],
+    ['Sales & CRM / Sales Manager', '1000'],
+    ['Service Job / Super Admin', '1111'],
+    ['Administration / Settings', '1111'],
+  ],
+  // Vendor rates are buy-side pricing: the pricing desk owns them.
+  'rate.request': [
+    ['Pricing / Manage Pricing', '1111'],
+    ['Sales & CRM / Sales Administrator', '1111'],
+    ['Sales & CRM / Sales Manager', '1110'],
+    ['Sales & CRM / Salesman', '1100'],
+    ['Purchase / Administrator', '1111'],
+    ['Purchase / User', '1110'],
+    ['Operations / Administrator', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+
+  // --- accounting ----------------------------------------------------------
+  'pdc.payment': [
+    ['Invoicing / Billing Administrator', '1111'],
+    ['Invoicing / Billing', '1110'],
+    ['Operations / Administrator', '1000'],
+    ['Administration / Settings', '1111'],
   ],
 };
 

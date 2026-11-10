@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, XCircle, Package,
-  DollarSign, Clock, User, Edit, Ship,
+  DollarSign, Clock, User, Edit, Ship, Route,
 } from 'lucide-react';
-import { quotationsAPI } from '../../services/api';
+import { quotationsAPI, organizationsAPI } from '../../services/api';
 import StatusBadge from '../../common/StatusBadge';
 import Modal from '../../common/Modal';
+import ChargeLinesPanel from '../../common/ChargeLinesPanel';
+import QuoteLegsPanel from '../../common/QuoteLegsPanel';
 import { formatDate, formatCurrency, getModeIcon, capitalize } from '../../utils/helpers';
 import { PageLoader } from '../../common/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -43,20 +45,35 @@ const AdminQuotationDetail = () => {
   const [actionModal, setActionModal] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  // Parties for the creditor/debtor pickers on the charge lines.
+  const [partners, setPartners] = useState([]);
+
+  // Declared with useCallback because the charge and routing panels call it to
+  // refresh the header totals after they change a line or a leg.
+  const fetchQuotation = useCallback(async () => {
+    try {
+      const response = await quotationsAPI.getById(id);
+      setQuotation(response.data.data);
+    } catch {
+      setQuotation({ ...mockQuotation, id });
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { fetchQuotation(); }, [fetchQuotation]);
 
   useEffect(() => {
-    const fetch = async () => {
+    (async () => {
       try {
-        const response = await quotationsAPI.getById(id);
-        setQuotation(response.data.data);
+        const res = await organizationsAPI.getAll({ limit: 'all' });
+        const d = res.data?.data;
+        setPartners(Array.isArray(d) ? d : (d?.rows || []));
       } catch {
-        setQuotation({ ...mockQuotation, id });
-      } finally {
-        setLoading(false);
+        // The charge-line pickers fall back to "Not set" without the list.
       }
-    };
-    fetch();
-  }, [id]);
+    })();
+  }, []);
 
   const handleApprove = async () => {
     setActionLoading(true);
@@ -232,6 +249,70 @@ const AdminQuotationDetail = () => {
               </div>
             )}
           </div>
+
+          {/* Charge lines — the costing behind the quote. Cost, sell and
+              margin per charge, with quantities derived from the cargo
+              figures. The flat totals shown further down are the roll-up of
+              these lines. */}
+          {q.id && (
+            <ChargeLinesPanel
+              parentType="quote"
+              parentId={q.id}
+              side="both"
+              currency={q.currency || 'AED'}
+              partners={partners}
+              readOnly={['converted', 'cancelled', 'expired'].includes(q.status)}
+              title="Charges"
+            />
+          )}
+
+          {/* Multimodal routing — one quote number covering several carriage
+              legs, each with its own carrier, schedule and charges. */}
+          {q.id && (
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <Route className="w-4 h-4 text-primary-600" /> Routing
+                {q.isMultimodal && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
+                    Multimodal · {q.legCount || 0} legs
+                  </span>
+                )}
+              </h3>
+              <QuoteLegsPanel
+                quotationId={q.id}
+                quoteStatus={q.status}
+                currency={q.currency || 'AED'}
+                partners={partners}
+                onChanged={fetchQuotation}
+              />
+            </div>
+          )}
+
+          {/* Vendor rate requests raised against this quote */}
+          {q.id && q.quoteRateRequestState && q.quoteRateRequestState !== 'draft' && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Vendor pricing</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {{
+                      vendor_rate_requested: 'Rates requested from vendors, none in yet.',
+                      vendor_rate_submitted: 'Vendor rates received and ready to compare.',
+                      vendor_rate_renegotiate_requested: 'A vendor has been asked to revise.',
+                      vendor_rate_renegotiate_submitted: 'Revised vendor rates received.',
+                    }[q.quoteRateRequestState] || q.quoteRateRequestState.replace(/_/g, ' ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/admin/crm/rate-requests?quotationId=${q.id}`)}
+                  className="px-3 py-1.5 text-xs font-medium rounded border border-slate-200 text-slate-700 hover:bg-slate-50"
+                >
+                  Open rate requests
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Surcharges */}
           {Array.isArray(q.surcharges) && q.surcharges.length > 0 && (

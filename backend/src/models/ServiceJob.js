@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { COSTING_FIELDS, CHARGEABLE_WEIGHT_FIELD } = require('./costingFields');
 
 const ServiceJob = sequelize.define('ServiceJob', {
   id: {
@@ -109,6 +110,46 @@ const ServiceJob = sequelize.define('ServiceJob', {
     type: DataTypes.UUID,
     allowNull: false,
   },
+  // Revenue, cost and margin rolled up from this job's charge lines.
+  ...COSTING_FIELDS,
+  ...CHARGEABLE_WEIGHT_FIELD,
+  // Customs and cargo detail the upstream Service Job form carries.
+  serviceJobType: { type: DataTypes.STRING(60), allowNull: true },
+  bookingNominationNo: { type: DataTypes.STRING(60), allowNull: true },
+  transportMode: { type: DataTypes.STRING(20), allowNull: true },
+  shipmentType: { type: DataTypes.STRING(30), allowNull: true },
+  cargoType: { type: DataTypes.STRING(30), allowNull: true },
+  salesAgentId: { type: DataTypes.UUID, allowNull: true },
+  clientTag: { type: DataTypes.STRING(80), allowNull: true },
+  etd: { type: DataTypes.DATE, allowNull: true },
+  eta: { type: DataTypes.DATE, allowNull: true },
+  atd: { type: DataTypes.DATE, allowNull: true },
+  ata: { type: DataTypes.DATE, allowNull: true },
+  grossWeight: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  volume: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  packUnit: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  hasCustoms: { type: DataTypes.BOOLEAN, defaultValue: false },
+  customsAdCode: { type: DataTypes.STRING(40), allowNull: true },
+  customsLocation: { type: DataTypes.STRING(150), allowNull: true },
+  customsDeclarationNumber: { type: DataTypes.STRING(60), allowNull: true },
+  customsDeclarationDate: { type: DataTypes.DATEONLY, allowNull: true },
+  customsClearanceDatetime: { type: DataTypes.DATE, allowNull: true },
+  customsProcedureCode: { type: DataTypes.STRING(40), allowNull: true },
+  customsBeType: {
+    type: DataTypes.STRING(60),
+    allowNull: true,
+    comment: 'Bill of entry type, e.g. Home Consumption, Bond, Re-export',
+  },
+  tariffDeterminationNumber: { type: DataTypes.STRING(60), allowNull: true },
+  valueDeterminationNumber: { type: DataTypes.STRING(60), allowNull: true },
+  boeNumber: { type: DataTypes.STRING(60), allowNull: true },
+  boeDate: { type: DataTypes.DATEONLY, allowNull: true },
+  ownership: { type: DataTypes.ENUM('self', 'third_party'), allowNull: true },
+  ownershipPartnerId: { type: DataTypes.UUID, allowNull: true },
+  isHazardous: { type: DataTypes.BOOLEAN, defaultValue: false },
+  hazClass: { type: DataTypes.STRING(40), allowNull: true },
+  hazUnNumber: { type: DataTypes.STRING(20), allowNull: true },
+  hazRemark: { type: DataTypes.TEXT, allowNull: true },
 }, {
   tableName: 'service_jobs',
   hooks: {

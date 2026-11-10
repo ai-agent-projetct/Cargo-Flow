@@ -75,6 +75,10 @@ export const TABS = [
   'Parties',
   'Packages',
   'Routing',
+  // Cost and revenue charges are kept as two tabs, the way the job cost sheet
+  // reads: what we owe the vendors, and what we bill the customer.
+  'Cost Charges',
+  'Revenue Charges',
   'Milestones Tracking',
   'T&C',
   'Remarks',

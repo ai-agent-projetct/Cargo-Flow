@@ -15,6 +15,16 @@ import ProtectedRoute from './common/ProtectedRoute';
 // Auth
 import Login from './pages/auth/Login';
 
+// Vendor portal — opened from an emailed link, so it sits outside the
+// authenticated routes and authenticates on the request's own token.
+import VendorRatePortal from './pages/VendorRatePortal';
+
+// Sales & CRM: Prospect -> Lead -> Opportunity -> Quote
+import CrmLayout from './pages/admin/crm/CrmLayout';
+
+// Accounting: post-dated cheques
+import PdcPayments from './pages/admin/accounting/PdcPayments';
+
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminQuotations from './pages/admin/Quotations';
@@ -145,6 +155,9 @@ function App() {
           <Routes>
             {/* Public */}
             <Route path="/login" element={<Login />} />
+            {/* A vendor quoting buy rates has no ERP login; the token in the
+                URL is the credential and grants access to one request only. */}
+            <Route path="/vendor/rate-request/:token" element={<VendorRatePortal />} />
 
             {/* ─── Admin Routes ──────────────────────────────────────────── */}
             <Route
@@ -159,6 +172,9 @@ function App() {
 
               {/* Administration */}
               <Route path="administration/*" element={<AdministrationLayout />} />
+
+              {/* Sales & CRM — the funnel ahead of the quote */}
+              <Route path="crm/*" element={<CrmLayout />} />
 
               {/* Dashboard variants */}
               <Route path="dashboard" element={<AdminDashboard />} />
@@ -318,8 +334,15 @@ function App() {
                 <Route path="management/deferred-expenses" element={<AssetList menu="deferred-expenses" title="Deferred Expenses" />} />
                 <Route path="management/wip" element={<ReportView reportId="accounting-operations" title="WIP Automation" />} />
 
-                {/* PDC is the same payments list narrowed to cheque payments. */}
-                <Route path="pdc" element={<PaymentList menu="payments" title="PDC Payments" method="PDC Payment" />} />
+                {/* Post-dated cheques have their own lifecycle: a cheque is
+                    held, then banked, then cleared, and only clearing posts a
+                    payment. `pdc/payments-view` keeps the earlier
+                    payments-list view reachable. */}
+                <Route path="pdc" element={<PdcPayments />} />
+                <Route
+                  path="pdc/payments-view"
+                  element={<PaymentList menu="payments" title="Cheque Payments" method="PDC Payment" />}
+                />
 
                 <Route path="actions/reconciliation" element={<Reconciliation />} />
                 <Route path="actions/lock-dates" element={<LockDates />} />

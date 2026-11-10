@@ -50,6 +50,17 @@ const Product = require('./Product');
 const AccountAsset = require('./AccountAsset');
 const ConfigItem = require('./ConfigItem');
 const MasterDataItem = require('./MasterDataItem');
+const ChargeLine = require('./ChargeLine');
+const QuoteLeg = require('./QuoteLeg');
+const QuoteTemplate = require('./QuoteTemplate');
+const CrmStage = require('./CrmStage');
+const Prospect = require('./Prospect');
+const Lead = require('./Lead');
+const SalesTeam = require('./SalesTeam');
+const SalesTarget = require('./SalesTarget');
+const RateRequest = require('./RateRequest');
+const RateRequestLine = require('./RateRequestLine');
+const PdcPayment = require('./PdcPayment');
 
 // User <-> Company
 User.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
@@ -245,6 +256,112 @@ Organization.hasMany(Organization, { foreignKey: 'parentId', as: 'addresses' });
 Organization.belongsTo(Organization, { foreignKey: 'parentId', as: 'parent' });
 ShipmentSharing.belongsTo(FFJob, { foreignKey: 'ffJobId', as: 'ffJob' });
 
+// --- Sales & CRM funnel -----------------------------------------------------
+// Prospect -> Lead -> Opportunity -> Quote -> Shipment / Service Job.
+Prospect.hasMany(Lead, { foreignKey: 'prospectId', as: 'leads' });
+Lead.belongsTo(Prospect, { foreignKey: 'prospectId', as: 'prospect' });
+Prospect.belongsTo(Organization, { foreignKey: 'relatedPartnerId', as: 'relatedPartner' });
+Prospect.belongsTo(User, { foreignKey: 'assignedTo', as: 'assignedUser' });
+Prospect.belongsTo(SalesTeam, { foreignKey: 'salesTeamId', as: 'salesTeam' });
+
+Lead.belongsTo(CrmStage, { foreignKey: 'stageId', as: 'stage' });
+Lead.belongsTo(User, { foreignKey: 'assignedTo', as: 'assignedUser' });
+Lead.belongsTo(SalesTeam, { foreignKey: 'salesTeamId', as: 'salesTeam' });
+Lead.belongsTo(SalesTarget, { foreignKey: 'salesTargetId', as: 'salesTarget' });
+Lead.belongsTo(Port, { foreignKey: 'portOfLoadingId', as: 'portOfLoading' });
+Lead.belongsTo(Port, { foreignKey: 'portOfDischargeId', as: 'portOfDischarge' });
+Lead.belongsTo(Opportunity, { foreignKey: 'opportunityId', as: 'opportunity' });
+Opportunity.hasMany(Lead, { foreignKey: 'opportunityId', as: 'sourceLeads' });
+
+SalesTeam.belongsTo(User, { foreignKey: 'leaderId', as: 'leader' });
+SalesTarget.belongsTo(User, { foreignKey: 'userId', as: 'salesperson' });
+SalesTarget.belongsTo(User, { foreignKey: 'managerId', as: 'manager' });
+SalesTarget.belongsTo(SalesTeam, { foreignKey: 'salesTeamId', as: 'salesTeam' });
+SalesTeam.hasMany(SalesTarget, { foreignKey: 'salesTeamId', as: 'targets' });
+
+// --- Multimodal quote legs --------------------------------------------------
+// One quote, several carriage legs. Charge lines point at the leg they price.
+Quotation.hasMany(QuoteLeg, { foreignKey: 'quotationId', as: 'legs' });
+QuoteLeg.belongsTo(Quotation, { foreignKey: 'quotationId', as: 'quotation' });
+QuoteLeg.belongsTo(Carrier, { foreignKey: 'carrierId', as: 'carrier' });
+QuoteLeg.belongsTo(Port, { foreignKey: 'originPortId', as: 'originPort' });
+QuoteLeg.belongsTo(Port, { foreignKey: 'destinationPortId', as: 'destinationPort' });
+QuoteLeg.belongsTo(Schedule, { foreignKey: 'scheduleId', as: 'schedule' });
+QuoteLeg.belongsTo(Schedule, { foreignKey: 'airScheduleId', as: 'airSchedule' });
+// A converted leg becomes a house shipment, which is `FFJob` in this codebase
+// and `Shipment` in the older flow. The column holds whichever was created,
+// so it carries no foreign key.
+QuoteLeg.belongsTo(Shipment, { foreignKey: 'convertedShipmentId', as: 'convertedShipment', constraints: false });
+QuoteLeg.belongsTo(FFJob, { foreignKey: 'convertedShipmentId', as: 'convertedJob', constraints: false });
+
+Schedule.belongsTo(Schedule, { foreignKey: 'parentScheduleId', as: 'parentSchedule' });
+Schedule.hasMany(Schedule, { foreignKey: 'parentScheduleId', as: 'legs' });
+
+Quotation.belongsTo(QuoteTemplate, { foreignKey: 'quoteTemplateId', as: 'quoteTemplate' });
+Quotation.belongsTo(Opportunity, { foreignKey: 'opportunityId', as: 'opportunity' });
+Opportunity.hasMany(Quotation, { foreignKey: 'opportunityId', as: 'quotations' });
+
+// --- Charge lines -----------------------------------------------------------
+// `charge_lines` is polymorphic over parentType, so the parent links are set
+// up as scoped hasMany rather than a plain foreign key. The cost <-> revenue
+// pairing and the quote-line provenance are self-references on the same table.
+Quotation.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'quote' }, constraints: false,
+});
+Shipment.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'house_shipment' }, constraints: false,
+});
+FFJob.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'house_shipment' }, constraints: false,
+});
+MasterShipment.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'master_shipment' }, constraints: false,
+});
+ServiceJob.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'service_job' }, constraints: false,
+});
+ProFormaInvoice.hasMany(ChargeLine, {
+  foreignKey: 'parentId', as: 'chargeLines',
+  scope: { parentType: 'pro_forma' }, constraints: false,
+});
+ChargeLine.belongsTo(ChargeLine, { foreignKey: 'quoteLineId', as: 'quoteLine', constraints: false });
+ChargeLine.belongsTo(ChargeLine, { foreignKey: 'pairLineId', as: 'pairLine', constraints: false });
+ChargeLine.belongsTo(QuoteLeg, { foreignKey: 'multimodalLineId', as: 'leg', constraints: false });
+QuoteLeg.hasMany(ChargeLine, { foreignKey: 'multimodalLineId', as: 'chargeLines', constraints: false });
+ChargeLine.belongsTo(Product, { foreignKey: 'productId', as: 'product', constraints: false });
+// A charge's creditor or debtor can be an Organization (the party master) or
+// a Customer (the legacy account record) depending on where the charge came
+// from, so these are eager-load hints only. A hard foreign key to one of the
+// two tables would reject perfectly valid ids from the other.
+ChargeLine.belongsTo(Organization, { foreignKey: 'creditorPartnerId', as: 'creditor', constraints: false });
+ChargeLine.belongsTo(Organization, { foreignKey: 'debtorPartnerId', as: 'debtor', constraints: false });
+ChargeLine.belongsTo(Carrier, { foreignKey: 'carrierId', as: 'carrier', constraints: false });
+
+// --- Vendor rate requests ---------------------------------------------------
+RateRequest.hasMany(RateRequestLine, { foreignKey: 'rateRequestId', as: 'lines' });
+RateRequestLine.belongsTo(RateRequest, { foreignKey: 'rateRequestId', as: 'rateRequest' });
+RateRequest.belongsTo(Organization, { foreignKey: 'agentId', as: 'agent' });
+RateRequest.belongsTo(Quotation, { foreignKey: 'quotationId', as: 'quotation' });
+RateRequest.belongsTo(Opportunity, { foreignKey: 'opportunityId', as: 'opportunity' });
+RateRequest.belongsTo(QuoteLeg, { foreignKey: 'quoteLegId', as: 'quoteLeg' });
+RateRequest.belongsTo(User, { foreignKey: 'requestedBy', as: 'requester' });
+Quotation.hasMany(RateRequest, { foreignKey: 'quotationId', as: 'rateRequests' });
+Opportunity.hasMany(RateRequest, { foreignKey: 'opportunityId', as: 'rateRequests' });
+RateRequestLine.belongsTo(ChargeLine, {
+  foreignKey: 'sourceQuoteLineId', as: 'sourceQuoteLine', constraints: false,
+});
+RateRequestLine.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
+// --- Post-dated cheques -----------------------------------------------------
+PdcPayment.belongsTo(Organization, { foreignKey: 'partnerId', as: 'partner' });
+PdcPayment.belongsTo(AccountJournal, { foreignKey: 'journalId', as: 'journal' });
+PdcPayment.belongsTo(AccountPayment, { foreignKey: 'paymentId', as: 'payment' });
+
 module.exports = {
   User,
   Company,
@@ -298,4 +415,15 @@ module.exports = {
   AccountAsset,
   ConfigItem,
   MasterDataItem,
+  ChargeLine,
+  QuoteLeg,
+  QuoteTemplate,
+  CrmStage,
+  Prospect,
+  Lead,
+  SalesTeam,
+  SalesTarget,
+  RateRequest,
+  RateRequestLine,
+  PdcPayment,
 };

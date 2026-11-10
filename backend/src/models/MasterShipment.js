@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { COSTING_FIELDS, CHARGEABLE_WEIGHT_FIELD } = require('./costingFields');
 
 // "Master Shipment (Console)" - Operations > Master shipment(Console).
 // Mirrors a slimmed-down version of FFJob with the 7-tab structure:
@@ -96,6 +97,9 @@ const MasterShipment = sequelize.define('MasterShipment', {
   remarks: { type: DataTypes.TEXT, allowNull: true },
   activityLog: { type: DataTypes.JSON, defaultValue: [] },
   createdBy: { type: DataTypes.UUID, allowNull: true },
+  // Revenue, cost and margin rolled up from this consol's charge lines.
+  ...COSTING_FIELDS,
+  ...CHARGEABLE_WEIGHT_FIELD,
 }, {
   tableName: 'master_shipments',
   hooks: {

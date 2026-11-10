@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { COSTING_FIELDS } = require('./costingFields');
 
 const FFJob = sequelize.define('FFJob', {
   id: {
@@ -326,6 +327,8 @@ const FFJob = sequelize.define('FFJob', {
     defaultValue: [],
     comment: 'Array of {poNumber, vendorName, amount, status, createdAt}',
   },
+  // Revenue, cost and margin rolled up from this job's charge lines.
+  ...COSTING_FIELDS,
 }, {
   tableName: 'ff_jobs',
   hooks: {

@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import {
   ffJobsAPI, quotationsAPI, customersAPI, usersAPI, portsAPI,
-  invoicesAPI, vendorBillsAPI, creditNotesAPI,
+  invoicesAPI, vendorBillsAPI, creditNotesAPI, organizationsAPI, chargeLinesAPI,
 } from '../../services/api';
+import ChargeLinesPanel from '../../common/ChargeLinesPanel';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { PageLoader } from '../../common/LoadingSpinner';
@@ -153,11 +154,14 @@ const AdminHouseShipmentDetail = () => {
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]);
   const [ports, setPorts] = useState([]);
+  // Parties for the creditor/debtor pickers on the charge tabs.
+  const [chargePartners, setChargePartners] = useState([]);
 
   // counters
   const [counts, setCounts] = useState({
     customerCredits: 0, vendorCredits: 0, invoices: 0, vendorBills: 0,
     revenueCharges: 0, costCharges: 0, documents: 0, journalEntries: 0,
+    revenueChargeAmount: 0, costChargeAmount: 0,
   });
 
   // status change modal
@@ -203,6 +207,12 @@ const AdminHouseShipmentDetail = () => {
     customersAPI.getAll({ limit: 200 }).then((res) => setCustomers(res.data?.data || [])).catch(() => {});
     usersAPI.getAll({ limit: 200 }).then((res) => setUsers(res.data?.data || [])).catch(() => {});
     portsAPI.getAll({ limit: 500 }).then((res) => setPorts(res.data?.data || [])).catch(() => {});
+    organizationsAPI.getAll({ limit: 'all' })
+      .then((res) => {
+        const d = res.data?.data;
+        setChargePartners(Array.isArray(d) ? d : (d?.rows || []));
+      })
+      .catch(() => {});
   }, []);
 
   // Load full record list (for prev/next navigation)
@@ -279,10 +289,20 @@ const AdminHouseShipmentDetail = () => {
     if (isNew || !id) return;
     const loadCounts = async () => {
       try {
-        const [invRes, vbRes] = await Promise.all([
+        const [invRes, vbRes, chargeRes] = await Promise.all([
           invoicesAPI.getAll({ shipmentId: id, limit: 1 }).catch(() => ({ data: { data: [], meta: {} } })),
           vendorBillsAPI.getAll({ ffJobId: id, limit: 1 }).catch(() => ({ data: { data: [], meta: {} } })),
+          // The charge counters used to be hard-wired to zero. They now count
+          // the shipment's real charge lines, which is what the Cost Charges
+          // and Revenue Charges tabs show.
+          chargeLinesAPI.getAll({ parentType: 'house_shipment', parentId: id, limit: 'all' })
+            .catch(() => ({ data: { data: { lines: [] } } })),
         ]);
+
+        const chargeLines = chargeRes.data?.data?.lines || [];
+        const sumBy = (side, field) => chargeLines
+          .filter((l) => l.side === side || l.side === 'both')
+          .reduce((s, l) => s + (Number(l[field]) || 0), 0);
 
         let creditCount = 0;
         if (form.customerId) {
@@ -299,6 +319,10 @@ const AdminHouseShipmentDetail = () => {
           invoices: invRes.data?.meta?.total ?? (invRes.data?.data || []).length,
           vendorBills: vbRes.data?.meta?.total ?? (vbRes.data?.data || []).length,
           documents: (form.documents || []).length,
+          costCharges: chargeLines.filter((l) => l.side === 'cost' || l.side === 'both').length,
+          revenueCharges: chargeLines.filter((l) => l.side === 'revenue' || l.side === 'both').length,
+          costChargeAmount: sumBy('cost', 'totalCostAmountIncl'),
+          revenueChargeAmount: sumBy('revenue', 'totalSellAmountIncl'),
         }));
       } catch { /* best-effort */ }
     };
@@ -515,8 +539,25 @@ const AdminHouseShipmentDetail = () => {
       case 'documents':
         setShowDocumentsModal(true);
         break;
+      // These two used to say "Coming soon". The charges now live on their own
+      // tabs, so the cards jump straight to them.
+      case 'revenueCharges':
+        setActiveTab('Revenue Charges');
+        break;
+      case 'costCharges':
+        setActiveTab('Cost Charges');
+        break;
+      case 'vendorCredits':
+        navigate(`/admin/vendors/debit-notes?ffJobId=${id}`);
+        break;
+      case 'journalEntries':
+        navigate(`/admin/accounting/entries?search=${encodeURIComponent(form.jobNumber || '')}`);
+        break;
+      case 'purchaseOrders':
+        navigate('/admin/procurement/purchase-orders');
+        break;
       default:
-        toast('Coming soon', { icon: 'ℹ️' });
+        toast('Nothing is linked to this card yet', { icon: 'ℹ️' });
     }
   };
 
@@ -740,15 +781,35 @@ const AdminHouseShipmentDetail = () => {
     toast.success('Note logged (will be saved with the record)');
   };
 
-  // Revenue summary
+  // Revenue summary.
+  //
+  // The figures come from the shipment's charge lines, rolled up server side
+  // and stored on the record. The `form.revenue` block is the older
+  // hand-entered version and is still read as a fallback, so a shipment that
+  // predates the charge-line engine keeps showing whatever was keyed into it.
   const revenueSummary = useMemo(() => {
     const rev = form.revenue || {};
-    const estReceivable = parseFloat(rev.estReceivable) || 0;
-    const actReceivable = parseFloat(rev.actReceivable) || 0;
-    const estPayable = parseFloat(rev.estPayable) || 0;
-    const actPayable = parseFloat(rev.actPayable) || 0;
-    const estMargin = parseFloat(rev.estMargin) || 0;
-    const actMargin = parseFloat(rev.actMargin) || 0;
+    const fromCharges = Number(job?.estimatedRevenue) > 0 || Number(job?.estimatedCost) > 0;
+
+    const estReceivable = fromCharges
+      ? Number(job.estimatedRevenue) || 0
+      : parseFloat(rev.estReceivable) || 0;
+    const actReceivable = fromCharges
+      ? Number(job.receivedRevenue) || 0
+      : parseFloat(rev.actReceivable) || 0;
+    const estPayable = fromCharges
+      ? Number(job.estimatedCost) || 0
+      : parseFloat(rev.estPayable) || 0;
+    const actPayable = fromCharges
+      ? Number(job.paidCost) || 0
+      : parseFloat(rev.actPayable) || 0;
+    const estMargin = fromCharges
+      ? Number(job.estimatedMargin) || 0
+      : parseFloat(rev.estMargin) || 0;
+    const actMargin = fromCharges
+      ? Number(job.receivedMargin) || 0
+      : parseFloat(rev.actMargin) || 0;
+
     const estimatedMarginPct = estReceivable !== 0 ? (estMargin / estReceivable) * 100 : 0;
     const receivedMarginPct = actReceivable !== 0 ? (actMargin / actReceivable) * 100 : 0;
     return {
@@ -757,8 +818,9 @@ const AdminHouseShipmentDetail = () => {
       dueReceivable: estReceivable - actReceivable,
       duePayable: estPayable - actPayable,
       dueMargin: estMargin - actMargin,
+      source: fromCharges ? 'charges' : 'manual',
     };
-  }, [form.revenue]);
+  }, [form.revenue, job]);
 
   if (loading) return <PageLoader />;
 
@@ -767,8 +829,23 @@ const AdminHouseShipmentDetail = () => {
     { key: 'vendorCredits', icon: Receipt, label: 'Vendor Credits', value: counts.vendorCredits },
     { key: 'invoices', icon: FileText, label: 'Invoices', value: counts.invoices },
     { key: 'vendorBills', icon: FileBarChart, label: 'Vendor Bills', value: counts.vendorBills },
-    { key: 'revenueCharges', icon: TrendingUp, label: 'Revenue Charges', value: `${counts.revenueCharges} AED` },
-    { key: 'costCharges', icon: TrendingDown, label: 'Cost Charges', value: `${counts.costCharges} AED` },
+    // These two previously printed the row count with "AED" after it, which
+    // read as an amount and was always zero. They now show the real total,
+    // with the line count underneath.
+    {
+      key: 'revenueCharges',
+      icon: TrendingUp,
+      label: 'Revenue Charges',
+      value: `${(counts.revenueChargeAmount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} AED`,
+      sub: `${counts.revenueCharges} line(s)`,
+    },
+    {
+      key: 'costCharges',
+      icon: TrendingDown,
+      label: 'Cost Charges',
+      value: `${(counts.costChargeAmount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} AED`,
+      sub: `${counts.costCharges} line(s)`,
+    },
     { key: 'documents', icon: Folder, label: 'Documents', value: (form.documents || []).length },
     { key: 'journalEntries', icon: BookOpen, label: 'Journal Entries', value: counts.journalEntries },
     ...((form.purchaseOrders || []).length > 0
@@ -965,12 +1042,13 @@ const AdminHouseShipmentDetail = () => {
 
       {/* Stat bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-        {statCards.map(({ key, icon: Icon, label, value }) => (
+        {statCards.map(({ key, icon: Icon, label, value, sub }) => (
           <button
             key={key}
             type="button"
             onClick={() => handleStatCardClick(key)}
             disabled={isNew}
+            title={isNew ? 'Save the shipment first' : `Open ${label}`}
             className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border text-center transition-colors ${
               isNew
                 ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
@@ -980,6 +1058,7 @@ const AdminHouseShipmentDetail = () => {
             <Icon className="w-4 h-4" />
             <span className="text-sm font-bold">{value}</span>
             <span className="text-[10px] leading-tight">{label}</span>
+            {sub && <span className="text-[9px] leading-tight text-gray-400">{sub}</span>}
           </button>
         ))}
       </div>
@@ -1295,7 +1374,13 @@ const AdminHouseShipmentDetail = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      </fieldset>
+
+      {/* Tabs.
+          The tab strip is navigation, not input, so it sits outside the
+          read-only fieldset. A disabled fieldset disables every button inside
+          it, which previously made the tabs unclickable whenever a shipment
+          was being viewed rather than edited. */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex flex-wrap gap-1 border-b border-gray-200 mb-4 -mx-6 px-6">
           {TABS.map((tab) => (
@@ -1314,6 +1399,42 @@ const AdminHouseShipmentDetail = () => {
           ))}
         </div>
 
+        {/* The charge grids carry their own read-only rule — a charge already
+            billed is frozen, the rest stay editable — so they are kept out of
+            the form's view-mode fieldset. */}
+        {activeTab === 'Cost Charges' && (isNew ? (
+          <p className="text-sm text-gray-500 py-6">
+            Save the shipment first — charges are attached to a saved record.
+          </p>
+        ) : (
+          <ChargeLinesPanel
+            parentType="house_shipment"
+            parentId={id}
+            side="cost"
+            currency={job?.currency || 'AED'}
+            partners={chargePartners}
+            title="Cost Charges"
+            onTotalsChange={() => setRefreshKey((k) => k + 1)}
+          />
+        ))}
+        {activeTab === 'Revenue Charges' && (isNew ? (
+          <p className="text-sm text-gray-500 py-6">
+            Save the shipment first — charges are attached to a saved record.
+          </p>
+        ) : (
+          <ChargeLinesPanel
+            parentType="house_shipment"
+            parentId={id}
+            side="revenue"
+            currency={job?.currency || 'AED'}
+            partners={chargePartners}
+            title="Revenue Charges"
+            onTotalsChange={() => setRefreshKey((k) => k + 1)}
+          />
+        ))}
+
+        <fieldset disabled={!editMode} className={editMode ? '' : 'view-mode-fieldset'}>
+
         {activeTab === 'Carriage' && <CarriageTab {...tabComponentProps} ports={ports} />}
         {activeTab === 'Additional' && <AdditionalTab {...tabComponentProps} />}
         {activeTab === 'Cut-Off Dates' && <CutOffDatesTab {...tabComponentProps} />}
@@ -1328,9 +1449,9 @@ const AdminHouseShipmentDetail = () => {
         )}
         {activeTab === 'T&C' && <TermsTab {...tabComponentProps} />}
         {activeTab === 'Remarks' && <RemarksTab {...tabComponentProps} />}
-      </div>
 
-      </fieldset>
+        </fieldset>
+      </div>
 
       {/* Shipment Revenue Summary */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">

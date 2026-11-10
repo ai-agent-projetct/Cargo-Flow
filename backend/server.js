@@ -78,12 +78,24 @@ app.use(cors({
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
+// This is an internal ERP: one operator working a shipment legitimately makes
+// hundreds of calls in a session, because each detail screen loads its
+// lookups, its counters and its charge grids. At 500 per 15 minutes the limit
+// was being hit during ordinary use, and a rate-limited charge grid looks
+// exactly like an empty one - which is worse than no limit at all.
+//
+// The limit that actually matters against brute force is `authLimiter` below,
+// which is left untouched at 20 login attempts per 15 minutes. This one only
+// guards against a runaway client, so it is set where a human cannot reach it
+// but a loop can, and skipped entirely in development where the whole team
+// shares one address.
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500,
+  max: 5000,
   message: { success: false, message: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV !== 'production',
 });
 
 const authLimiter = rateLimit({

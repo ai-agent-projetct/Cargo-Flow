@@ -35,13 +35,16 @@ const Quotation = sequelize.define('Quotation', {
     type: DataTypes.ENUM('sea', 'air', 'land', 'rail', 'multimodal'),
     allowNull: false,
   },
-  // New transport mode field (uppercase, aligned with FF Job)
+  // New transport mode field (uppercase, aligned with FF Job).
+  // COURIER and MULTIMODAL were added with the multimodal quote work: a
+  // door-to-door quote covering several legs has no single carriage mode, and
+  // its per-leg modes live on `quote_legs`.
   transportMode: {
-    type: DataTypes.ENUM('SEA', 'AIR', 'ROAD', 'RAIL'),
+    type: DataTypes.ENUM('SEA', 'AIR', 'ROAD', 'RAIL', 'COURIER', 'MULTIMODAL'),
     allowNull: true,
   },
   direction: {
-    type: DataTypes.ENUM('EXPORT', 'IMPORT', 'LOCAL'),
+    type: DataTypes.ENUM('EXPORT', 'IMPORT', 'LOCAL', 'CROSS_TRADE'),
     allowNull: true,
   },
   cargoType: {
@@ -231,6 +234,174 @@ const Quotation = sequelize.define('Quotation', {
     allowNull: true,
     comment: 'Service Job created from this quotation',
   },
+
+  // --- CRM funnel link ------------------------------------------------------
+  // A quote normally comes from an opportunity; a quote raised straight from
+  // the customer portal has none, which is what `source` records.
+  opportunityId: { type: DataTypes.UUID, allowNull: true },
+  salesTeamId: { type: DataTypes.UUID, allowNull: true },
+  pricingTeamId: { type: DataTypes.UUID, allowNull: true },
+  quoteTemplateId: { type: DataTypes.UUID, allowNull: true },
+  source: {
+    type: DataTypes.ENUM('system', 'customer', 'portal'),
+    allowNull: false,
+    defaultValue: 'system',
+  },
+  generatedFromPortal: { type: DataTypes.BOOLEAN, defaultValue: false },
+  quoteFor: {
+    type: DataTypes.ENUM('shipment', 'job'),
+    allowNull: false,
+    defaultValue: 'shipment',
+  },
+  shipmentCount: {
+    type: DataTypes.ENUM('single', 'multiple'),
+    allowNull: false,
+    defaultValue: 'single',
+  },
+  serviceJobType: { type: DataTypes.STRING(60), allowNull: true },
+
+  // --- multimodal -----------------------------------------------------------
+  // A multimodal quote carries its carriage in `quote_legs` rather than in the
+  // header route fields, and prices each leg with its own charge lines. The
+  // header fields stay populated with the first and last leg so existing
+  // screens and reports keep working.
+  isMultimodal: { type: DataTypes.BOOLEAN, defaultValue: false },
+  selectedMultimodalMode: {
+    type: DataTypes.ENUM('SEA', 'AIR', 'ROAD', 'RAIL', 'COURIER'),
+    allowNull: true,
+    comment: 'Leg the customer accepted when alternatives were offered',
+  },
+  legCount: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+
+  // --- vendor rate request state -------------------------------------------
+  quoteRateRequestState: {
+    type: DataTypes.ENUM(
+      'draft',
+      'vendor_rate_requested',
+      'vendor_rate_submitted',
+      'vendor_rate_renegotiate_requested',
+      'vendor_rate_renegotiate_submitted',
+      'pricing_approval',
+      'to_approve',
+      'approved',
+    ),
+    allowNull: false,
+    defaultValue: 'draft',
+  },
+  currentRateRequestId: { type: DataTypes.UUID, allowNull: true },
+
+  // --- parties beyond the customer -----------------------------------------
+  shipperId: { type: DataTypes.UUID, allowNull: true },
+  consigneeId: { type: DataTypes.UUID, allowNull: true },
+  agentId: { type: DataTypes.UUID, allowNull: true },
+  coLoaderId: { type: DataTypes.UUID, allowNull: true },
+  clientTag: { type: DataTypes.STRING(80), allowNull: true },
+
+  // --- routing detail -------------------------------------------------------
+  consolidationType: { type: DataTypes.STRING(40), allowNull: true },
+  serviceMode: { type: DataTypes.STRING(40), allowNull: true },
+  carrierServiceType: { type: DataTypes.STRING(80), allowNull: true },
+  referenceNumber: { type: DataTypes.STRING(80), allowNull: true },
+  pickupLocationType: { type: DataTypes.STRING(60), allowNull: true },
+  deliveryLocationType: { type: DataTypes.STRING(60), allowNull: true },
+  pickupAddress: { type: DataTypes.TEXT, allowNull: true },
+  deliveryAddress: { type: DataTypes.TEXT, allowNull: true },
+  pickupZipcode: { type: DataTypes.STRING(20), allowNull: true },
+  deliveryZipcode: { type: DataTypes.STRING(20), allowNull: true },
+  estimatedPickup: { type: DataTypes.DATE, allowNull: true },
+  expectedDelivery: { type: DataTypes.DATE, allowNull: true },
+  freeDays: { type: DataTypes.STRING(40), allowNull: true },
+  enableQuoteRouting: { type: DataTypes.BOOLEAN, defaultValue: false },
+  routes: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Ordered routing legs shown on the quote PDF',
+  },
+
+  // --- cargo figures --------------------------------------------------------
+  packUnit: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  packUnitUom: { type: DataTypes.STRING(10), allowNull: true, defaultValue: 'PKG' },
+  netWeight: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  weightVolume: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  chargeableWeight: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  chargeableVolume: { type: DataTypes.DECIMAL(14, 3), allowNull: true, defaultValue: 0 },
+  chargeableBasis: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'weight | volumetric | measurement | per_container | per_truck',
+  },
+  volumetricDivisor: {
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: true,
+    comment: 'cm3 per kg override; air defaults to 6000, courier to 5000',
+  },
+  totalTeu: { type: DataTypes.DECIMAL(10, 2), allowNull: true, defaultValue: 0 },
+  truckCount: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  containerLines: { type: DataTypes.JSON, allowNull: true, defaultValue: [] },
+  cargoLines: { type: DataTypes.JSON, allowNull: true, defaultValue: [] },
+  isPackageGroup: { type: DataTypes.BOOLEAN, defaultValue: false },
+  packagingMode: { type: DataTypes.ENUM('container', 'package'), allowNull: true },
+  goodsValue: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  goodsValueCurrency: { type: DataTypes.STRING(10), allowNull: true, defaultValue: 'AED' },
+  insuranceValue: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  insuranceValueCurrency: { type: DataTypes.STRING(10), allowNull: true, defaultValue: 'AED' },
+
+  // --- special cargo --------------------------------------------------------
+  hazClass: { type: DataTypes.STRING(40), allowNull: true },
+  hazUnNumber: { type: DataTypes.STRING(20), allowNull: true },
+  dangerousGoodNote: { type: DataTypes.TEXT, allowNull: true },
+  isStackable: { type: DataTypes.BOOLEAN, defaultValue: true },
+  temperatureDetails: { type: DataTypes.STRING(120), allowNull: true },
+  isOutOfGauge: { type: DataTypes.BOOLEAN, defaultValue: false },
+  outOfGaugeDetails: { type: DataTypes.STRING(200), allowNull: true },
+  isCourierShipment: { type: DataTypes.BOOLEAN, defaultValue: false },
+  serviceType: { type: DataTypes.ENUM('Standard', 'Priority'), allowNull: true },
+
+  // --- air / sea carriage details ------------------------------------------
+  flightNumber: { type: DataTypes.STRING(30), allowNull: true },
+  aircraftType: { type: DataTypes.ENUM('coa', 'pax'), allowNull: true },
+  addFlightDetails: { type: DataTypes.BOOLEAN, defaultValue: false },
+  addVesselDetails: { type: DataTypes.BOOLEAN, defaultValue: false },
+  addTransportationDetails: { type: DataTypes.BOOLEAN, defaultValue: false },
+  scheduleId: { type: DataTypes.UUID, allowNull: true },
+
+  // --- charge-line roll-up (kept in step with ChargeLine by chargeRollup) ---
+  estimatedRevenue: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  estimatedCost: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  estimatedMargin: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  estimatedMarginPercentage: { type: DataTypes.DECIMAL(9, 4), allowNull: true, defaultValue: 0 },
+  allInclusiveSellRate: { type: DataTypes.DECIMAL(16, 2), allowNull: true, defaultValue: 0 },
+  isGroupSimilarCharge: { type: DataTypes.BOOLEAN, defaultValue: false },
+  divideValue: { type: DataTypes.DECIMAL(12, 3), allowNull: true },
+  hideTotalInWords: { type: DataTypes.BOOLEAN, defaultValue: false },
+  showInclSingleLine: { type: DataTypes.BOOLEAN, defaultValue: false },
+  multiCarrierQuote: { type: DataTypes.BOOLEAN, defaultValue: false },
+  selectedCarrierId: { type: DataTypes.UUID, allowNull: true },
+  selectedTransitTime: { type: DataTypes.INTEGER, allowNull: true },
+
+  // --- approval + revision --------------------------------------------------
+  allowApproval: { type: DataTypes.BOOLEAN, defaultValue: false },
+  approvingUserId: { type: DataTypes.UUID, allowNull: true },
+  approverRejectReason: { type: DataTypes.STRING(250), allowNull: true },
+  signedBy: { type: DataTypes.STRING(150), allowNull: true },
+  signedOn: { type: DataTypes.DATE, allowNull: true },
+  declineMessage: { type: DataTypes.TEXT, allowNull: true },
+  changeReason: { type: DataTypes.STRING(150), allowNull: true },
+  isRenegotiated: { type: DataTypes.BOOLEAN, defaultValue: false },
+  portalCancelReason: { type: DataTypes.STRING(250), allowNull: true },
+  originalQuoteId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Quote this one supplements or revises',
+  },
+  cancelledQuoteId: { type: DataTypes.UUID, allowNull: true },
+  isSupplementary: { type: DataTypes.BOOLEAN, defaultValue: false },
+  supplementaryLastNo: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  isDuplicated: { type: DataTypes.BOOLEAN, defaultValue: false },
+  tags: { type: DataTypes.JSON, allowNull: true, defaultValue: [] },
+  accessToken: { type: DataTypes.STRING(64), allowNull: true },
+  companyId: { type: DataTypes.UUID, allowNull: true },
 }, {
   tableName: 'quotations',
   hooks: {

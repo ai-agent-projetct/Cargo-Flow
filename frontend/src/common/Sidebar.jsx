@@ -24,6 +24,12 @@ const adminNavigation = [
 
   { label: 'Administration', href: '/admin/administration', icon: Building2 },
 
+  { section: 'SALES & CRM' },
+  // The funnel ahead of the quote: Prospect -> Lead -> Opportunity -> Quote.
+  // Rate Requests, Targets and the configuration lists are in this module's
+  // own submenu rather than repeated here.
+  { label: 'Sales & CRM', href: '/admin/crm', icon: TrendingUp },
+
   { section: 'OPERATIONS' },
   { label: 'Operations', href: '/admin/house-shipments', icon: Ship },
   { label: 'Freight Booking', href: '/admin/freight-bookings', icon: Anchor },

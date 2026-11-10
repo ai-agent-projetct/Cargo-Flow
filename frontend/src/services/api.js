@@ -632,6 +632,148 @@ export const vendorBillsAPI = {
   delete: (id) => api.delete(`/vendorbills/${id}/`),
 };
 
+// ─── Sales & CRM ──────────────────────────────────────────────────────────────
+// Prospect → Lead → Opportunity → Quote → Shipment. `stages` serves both the
+// lead and the opportunity pipelines; pass ?kind=lead|opportunity.
+export const crmAPI = {
+  dashboard: (params) => api.get('/crm/dashboard', { params }),
+
+  stages: {
+    getAll: (params) => api.get('/crm/stages', { params }),
+    getById: (id) => api.get(`/crm/stages/${id}`),
+    create: (data) => api.post('/crm/stages', data),
+    update: (id, data) => api.put(`/crm/stages/${id}`, data),
+    delete: (id) => api.delete(`/crm/stages/${id}`),
+  },
+
+  teams: {
+    getAll: (params) => api.get('/crm/teams', { params }),
+    getById: (id) => api.get(`/crm/teams/${id}`),
+    getMembers: (id) => api.get(`/crm/teams/${id}/members`),
+    create: (data) => api.post('/crm/teams', data),
+    update: (id, data) => api.put(`/crm/teams/${id}`, data),
+    delete: (id) => api.delete(`/crm/teams/${id}`),
+  },
+
+  quoteTemplates: {
+    getAll: (params) => api.get('/crm/quote-templates', { params }),
+    getById: (id) => api.get(`/crm/quote-templates/${id}`),
+    create: (data) => api.post('/crm/quote-templates', data),
+    update: (id, data) => api.put(`/crm/quote-templates/${id}`, data),
+    delete: (id) => api.delete(`/crm/quote-templates/${id}`),
+  },
+
+  targets: {
+    getAll: (params) => api.get('/crm/targets', { params }),
+    getById: (id) => api.get(`/crm/targets/${id}`),
+    create: (data) => api.post('/crm/targets', data),
+    update: (id, data) => api.put(`/crm/targets/${id}`, data),
+    delete: (id) => api.delete(`/crm/targets/${id}`),
+    // Measures achievement from live shipments, quotes and charge lines.
+    recompute: (id) => api.post(id ? `/crm/targets/${id}/recompute` : '/crm/targets/recompute'),
+  },
+
+  prospects: {
+    getAll: (params) => api.get('/crm/prospects', { params }),
+    getById: (id) => api.get(`/crm/prospects/${id}`),
+    create: (data) => api.post('/crm/prospects', data),
+    update: (id, data) => api.put(`/crm/prospects/${id}`, data),
+    delete: (id) => api.delete(`/crm/prospects/${id}`),
+    // Opens a real customer account and links the prospect to it.
+    convert: (id, data) => api.post(`/crm/prospects/${id}/convert`, data),
+  },
+
+  leads: {
+    getAll: (params) => api.get('/crm/leads', { params }),
+    kanban: (params) => api.get('/crm/leads/kanban', { params }),
+    getById: (id) => api.get(`/crm/leads/${id}`),
+    create: (data) => api.post('/crm/leads', data),
+    update: (id, data) => api.put(`/crm/leads/${id}`, data),
+    delete: (id) => api.delete(`/crm/leads/${id}`),
+    setStage: (id, data) => api.post(`/crm/leads/${id}/stage`, data),
+    convert: (id, data) => api.post(`/crm/leads/${id}/convert`, data),
+  },
+};
+
+// ─── Charge lines ─────────────────────────────────────────────────────────────
+// One endpoint behind every charge grid: quote lines, house and master
+// shipment cost/revenue charges, service job charges and pro forma lines.
+// Filter with ?parentType=&parentId=&side=.
+export const chargeLinesAPI = {
+  getAll: (params) => api.get('/charge-lines', { params }),
+  getById: (id) => api.get(`/charge-lines/${id}`),
+  create: (data) => api.post('/charge-lines', data),
+  update: (id, data) => api.put(`/charge-lines/${id}`, data),
+  delete: (id) => api.delete(`/charge-lines/${id}`),
+  // Reprices every basis-driven charge after a cargo change.
+  recalculate: (data) => api.post('/charge-lines/recalculate', data),
+  // The selling-to-operating handover: quote charges become cost + revenue.
+  copyFromQuote: (data) => api.post('/charge-lines/copy-from-quote', data),
+  costSheet: (params) => api.get('/charge-lines/cost-sheet', { params }),
+};
+
+// ─── Multimodal quote legs ────────────────────────────────────────────────────
+export const quoteLegsAPI = {
+  getAll: (quotationId) => api.get(`/quote-legs/quotation/${quotationId}`),
+  routing: (quotationId) => api.get(`/quote-legs/quotation/${quotationId}/routing`),
+  create: (quotationId, data) => api.post(`/quote-legs/quotation/${quotationId}`, data),
+  // Turns an existing single-mode quote into leg 1 of a multimodal one.
+  enable: (quotationId) => api.post(`/quote-legs/quotation/${quotationId}/enable`),
+  reorder: (quotationId, legIds) => api.post(`/quote-legs/quotation/${quotationId}/reorder`, { legIds }),
+  getById: (id) => api.get(`/quote-legs/${id}`),
+  update: (id, data) => api.put(`/quote-legs/${id}`, data),
+  delete: (id) => api.delete(`/quote-legs/${id}`),
+  attachSchedule: (id, scheduleId) => api.post(`/quote-legs/${id}/schedule`, { scheduleId }),
+  convertToShipment: (id, data) => api.post(`/quote-legs/${id}/convert`, data),
+};
+
+// ─── Vendor rate requests ─────────────────────────────────────────────────────
+export const rateRequestsAPI = {
+  getAll: (params) => api.get('/rate-requests', { params }),
+  getById: (id) => api.get(`/rate-requests/${id}`),
+  create: (data) => api.post('/rate-requests', data),
+  update: (id, data) => api.put(`/rate-requests/${id}`, data),
+  delete: (id) => api.delete(`/rate-requests/${id}`),
+  // Side-by-side vendor comparison for one quotation.
+  compare: (quotationId) => api.get('/rate-requests/compare', { params: { quotationId } }),
+  send: (id) => api.post(`/rate-requests/${id}/send`),
+  submitRates: (id, data) => api.post(`/rate-requests/${id}/submit-rates`, data),
+  renegotiate: (id, data) => api.post(`/rate-requests/${id}/renegotiate`, data),
+  resolveRenegotiation: (id, accept) => api.post(`/rate-requests/${id}/renegotiate/resolve`, { accept }),
+  // Awards the vendor and writes their rates onto the quote as buy rates.
+  select: (id, data) => api.post(`/rate-requests/${id}/select`, data),
+  unselect: (id) => api.post(`/rate-requests/${id}/unselect`),
+  cancel: (id, reason) => api.post(`/rate-requests/${id}/cancel`, { reason }),
+  // A signed-in vendor's own overview.
+  myRequests: (params) => api.get('/rate-requests/my-requests', { params }),
+};
+
+// ─── Vendor portal (token authenticated, no login) ────────────────────────────
+// A vendor opens their request from an emailed link. The token is the
+// credential, so these calls carry no bearer header and the payload never
+// includes our sell rates, margin or customer.
+export const vendorPortalAPI = {
+  get: (token) => api.get(`/rate-requests/portal/${token}`),
+  submit: (token, data) => api.post(`/rate-requests/portal/${token}/submit`, data),
+  decline: (token, reason) => api.post(`/rate-requests/portal/${token}/decline`, { reason }),
+};
+
+// ─── Post-dated cheques ───────────────────────────────────────────────────────
+export const pdcAPI = {
+  getAll: (params) => api.get('/accounting/pdc', { params }),
+  getById: (id) => api.get(`/accounting/pdc/${id}`),
+  create: (data) => api.post('/accounting/pdc', data),
+  update: (id, data) => api.put(`/accounting/pdc/${id}`, data),
+  delete: (id) => api.delete(`/accounting/pdc/${id}`),
+  maturity: (params) => api.get('/accounting/pdc/maturity', { params }),
+  deposit: (id, data) => api.post(`/accounting/pdc/${id}/deposit`, data),
+  // The only transition that posts a payment.
+  clear: (id, data) => api.post(`/accounting/pdc/${id}/clear`, data),
+  bounce: (id, data) => api.post(`/accounting/pdc/${id}/bounce`, data),
+  markReturned: (id, data) => api.post(`/accounting/pdc/${id}/return`, data),
+  reopen: (id, data) => api.post(`/accounting/pdc/${id}/reopen`, data),
+};
+
 // ─── Notifications ───────────────────────────────────────────────────────────
 export const notificationsAPI = {
   getAll: (params) => api.get('/notifications/', { params }),

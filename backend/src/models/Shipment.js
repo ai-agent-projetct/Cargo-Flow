@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { COSTING_FIELDS, CHARGEABLE_WEIGHT_FIELD } = require('./costingFields');
 
 const Shipment = sequelize.define('Shipment', {
   id: {
@@ -201,6 +202,9 @@ const Shipment = sequelize.define('Shipment', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  // Revenue, cost and margin rolled up from this shipment's charge lines.
+  ...COSTING_FIELDS,
+  ...CHARGEABLE_WEIGHT_FIELD,
 }, {
   tableName: 'shipments',
   hooks: {
