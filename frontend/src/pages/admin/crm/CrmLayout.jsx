@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, Briefcase, FileSpreadsheet, Coins,
-  Target, Layers, UsersRound, FileCode, Tags,
+  Target, Layers, UsersRound, FileCode, Tags, BarChart3,
 } from 'lucide-react';
 import SalesDashboard from './SalesDashboard';
 import LeadBoard from './LeadBoard';
@@ -35,6 +35,17 @@ const SECTIONS = [
     title: 'Sales Strategy',
     items: [
       { to: 'targets', label: 'Targets', icon: Target },
+    ],
+  },
+  {
+    // Served by the shared report engine at /admin/ops-reports/<id>.
+    title: 'Reports',
+    items: [
+      { to: '/admin/ops-reports/charges-wise-quotation', label: 'Charges Wise Quotation', icon: BarChart3, external: true },
+      { to: '/admin/ops-reports/customer-visit', label: 'Customer Visit Report', icon: BarChart3, external: true },
+      { to: '/admin/ops-reports/opportunity-detail', label: 'Opportunity Detail', icon: BarChart3, external: true },
+      { to: '/admin/ops-reports/quote-status-analysis', label: 'Quote Analysis by Status', icon: BarChart3, external: true },
+      { to: '/admin/ops-reports/sales-agent', label: 'Sales Agent Report', icon: BarChart3, external: true },
     ],
   },
   {

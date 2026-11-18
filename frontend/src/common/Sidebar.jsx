@@ -59,6 +59,7 @@ const adminNavigation = [
   { label: 'Rate Management', href: '/admin/rates', icon: DollarSign },
 
   { section: 'ADMINISTRATION' },
+  { label: 'ETL', href: '/admin/etl', icon: FileCheck },
   { label: 'Carriers', href: '/admin/carriers', icon: Truck },
   { label: 'Ports', href: '/admin/ports', icon: MapPin },
   { label: 'Reports', href: '/admin/reports', icon: BarChart2 },

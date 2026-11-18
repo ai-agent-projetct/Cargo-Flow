@@ -24,6 +24,7 @@ import CrmLayout from './pages/admin/crm/CrmLayout';
 
 // Accounting: post-dated cheques
 import PdcPayments from './pages/admin/accounting/PdcPayments';
+import EtlLayout from './pages/admin/etl/EtlLayout';
 import ReportViewForOps from './pages/admin/accounting/ReportView';
 import { useParams as useRouteParams } from 'react-router-dom';
 
@@ -189,6 +190,9 @@ function App() {
               {/* Operations, Sales and ETL reports from the shared report
                   engine; the id in the path picks the report. */}
               <Route path="ops-reports/:reportId" element={<OpsReport />} />
+
+              {/* ETL: CSV import, saved mappings, reporting menu */}
+              <Route path="etl/*" element={<EtlLayout />} />
 
               {/* Dashboard variants */}
               <Route path="dashboard" element={<AdminDashboard />} />

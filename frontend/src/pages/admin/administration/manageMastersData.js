@@ -8,6 +8,8 @@ export const MANAGE_SUBMENU = [
   { key: 'manage/incoterm', label: 'Incoterm' },
   { key: 'manage/carriers', label: 'Carriers' },
   { key: 'manage/carrier-agent', label: 'Carrier Agent' },
+  { key: 'manage/carrier-service-type', label: 'Carrier Service Type' },
+  { key: 'manage/client-tag', label: 'Client Tag' },
   { key: 'manage/hs-codes', label: 'HS Codes' },
   { key: 'manage/un-locode-locations', label: 'UN/LOCODE Locations' },
   { key: 'manage/commodity', label: 'Commodity' },
@@ -223,6 +225,48 @@ export const MASTER_DATA_CONFIG = {
       { key: 'extra', label: 'Freight Product' },
       { key: 'extra2', label: 'Model' },
       { key: 'extra3', label: 'Field' },
+    ],
+  },
+  // Picked on quotes and charge lines to say what the carrier is quoting:
+  // port-to-port, door-to-door, express and so on.
+  'carrier-service-type': {
+    title: 'Carrier Service Type',
+    fields: [
+      { key: 'code', label: 'Code' },
+      { key: 'name', label: 'Service Type' },
+      { key: 'description', label: 'Description' },
+    ],
+  },
+  // Segments a customer for reporting and pricing: key account, SME, ...
+  'client-tag': {
+    title: 'Client Tag',
+    fields: [
+      { key: 'code', label: 'Code' },
+      { key: 'name', label: 'Client Tag' },
+      { key: 'description', label: 'Description' },
+    ],
+  },
+  // The Contacts app's configuration lists.
+  'contact-tag': {
+    title: 'Contact Tags',
+    fields: [
+      { key: 'code', label: 'Code' },
+      { key: 'name', label: 'Tag' },
+    ],
+  },
+  'contact-title': {
+    title: 'Contact Titles',
+    fields: [
+      { key: 'code', label: 'Abbreviation' },
+      { key: 'name', label: 'Title' },
+    ],
+  },
+  industry: {
+    title: 'Industries',
+    fields: [
+      { key: 'code', label: 'Code' },
+      { key: 'name', label: 'Industry' },
+      { key: 'description', label: 'Description' },
     ],
   },
   'truck-number': {

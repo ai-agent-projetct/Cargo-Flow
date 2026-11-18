@@ -55,7 +55,9 @@ export const parseCsv = async (file) => {
 
   // Split on commas that are not inside quotes.
   const split = (line) => (line.match(/("([^"]|"")*"|[^,]*)(,|$)/g) || [])
-    .map((c) => c.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '').trim())
+    // A doubled quote inside a quoted cell is an escaped quote: `"12"" pipe"`
+    // reads back as `12" pipe`, not `12 pipe`.
+    .map((c) => c.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"').trim())
     .slice(0, -1);
 
   const headers = split(lines[0]);
