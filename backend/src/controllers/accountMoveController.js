@@ -1,7 +1,21 @@
 const { Op } = require('sequelize');
+const models = require('../models');
 const {
   AccountMove, AccountJournal, Customer, FFJob, MasterShipment, ServiceJob, ProFormaInvoice,
-} = require('../models');
+} = models;
+const {
+  resolveParents, buildInvoiceLines, journalItemsFor, applyToCharges, isCustomerDoc,
+} = require('../services/chargeInvoicing');
+
+// Post (+1) or reverse (-1) a document's effect on the charge lines it
+// billed, then re-roll each touched shipment so its margin follows.
+const syncCharges = async (rec, direction) => {
+  const touched = await applyToCharges(models, rec, direction);
+  if (!touched.length) return;
+  // Required lazily: chargeLineController loads the models too.
+  const { refreshParent } = require('./chargeLineController');
+  for (const t of touched) await refreshParent(t.parentType, t.parentId);
+};
 const { successResponse, errorResponse, getPagination, getPaginationMeta } = require('../utils/helpers');
 const { companyWhere, defaultCompanyId } = require('../middleware/companyScope');
 
@@ -271,21 +285,11 @@ exports.confirm = async (req, res, next) => {
     const next_ = last ? Number(String(last.name).split('/').pop()) + 1 : 1;
     const number = `${meta.prefix}/${year}/${String(next_).padStart(5, '0')}`;
 
-    const lines = (rec.lines || []).filter((l) => (l.kind || 'line') === 'line');
-    const journalItems = [
-      ...lines.map((l) => ({
-        account: l.account, label: l.label, partner: rec.partner,
-        debit: 0, credit: Number(l.subtotal || 0), currency: rec.currency,
-      })),
-      ...(Number(rec.amountTax || 0) ? [{
-        account: '201005 VAT Payable', label: 'VAT', partner: rec.partner,
-        debit: 0, credit: Number(rec.amountTax), currency: rec.currency,
-      }] : []),
-      {
-        account: '101001 Accounts Receivable', label: number, partner: rec.partner,
-        debit: Number(rec.amountTotal || 0), credit: 0, currency: rec.currency,
-      },
-    ];
+    // Customer documents debit receivable and credit sales and output VAT.
+    // Vendor documents debit cost and input VAT and credit payable - they
+    // previously posted to Accounts Receivable like a customer invoice.
+    // Refunds are the mirror image of their document.
+    const journalItems = journalItemsFor(rec, number);
 
     await rec.update({
       name: number,
@@ -298,6 +302,10 @@ exports.confirm = async (req, res, next) => {
         { field: 'Label', from: '', to: number },
       ])),
     });
+
+    // The shipment charges this document billed now show as invoiced or
+    // billed, so the shipment's margin and the outstanding reports move too.
+    await syncCharges(rec, +1);
     return successResponse(res, withMeta(rec), 'Entry posted');
   } catch (error) {
     next(error);
@@ -309,11 +317,14 @@ exports.cancel = async (req, res, next) => {
     const rec = await AccountMove.findByPk(req.params.id);
     if (!rec) return errorResponse(res, 'Record not found', 404);
     if (!rec.availableActions().cancel) return errorResponse(res, 'This entry cannot be cancelled', 400);
+    const wasPosted = rec.state === 'posted';
     const from = rec.state === 'draft' ? 'Draft' : 'Posted';
     await rec.update({
       state: 'cancel',
       activityLog: pushLog(rec, logEntry(actorName(req), '', [{ field: 'Status', from, to: 'Cancelled' }])),
     });
+    // Only a posted document had moved its charges; undo exactly that.
+    if (wasPosted) await syncCharges(rec, -1);
     return successResponse(res, withMeta(rec), 'Entry cancelled');
   } catch (error) {
     next(error);
@@ -325,12 +336,14 @@ exports.resetToDraft = async (req, res, next) => {
     const rec = await AccountMove.findByPk(req.params.id);
     if (!rec) return errorResponse(res, 'Record not found', 404);
     if (!rec.availableActions().resetToDraft) return errorResponse(res, 'This entry cannot be reset', 400);
+    const wasPosted = rec.state === 'posted';
     const from = rec.state === 'cancel' ? 'Cancelled' : 'Posted';
     await rec.update({
       state: 'draft',
       journalItems: [],
       activityLog: pushLog(rec, logEntry(actorName(req), '', [{ field: 'Status', from, to: 'Draft' }])),
     });
+    if (wasPosted) await syncCharges(rec, -1);
     return successResponse(res, withMeta(rec), 'Reset to draft');
   } catch (error) {
     next(error);
@@ -392,7 +405,23 @@ exports.pullCharges = async (req, res, next) => {
     const list = Array.isArray(refs) ? refs.filter(Boolean) : [];
     if (!list.length) return errorResponse(res, 'Select at least one shipment', 400);
 
-    const pulled = list.flatMap((ref) => SHIPMENT_CHARGES.map(([product, label, account, price]) => ({
+    // The shipment's real charge lines come first: revenue charges onto a
+    // customer document, cost charges onto a vendor document.
+    const parents = await resolveParents(models, kind, list);
+    const { lines: fromCharges, skipped } = await buildInvoiceLines(models, rec, parents);
+    const anyCharges = parents.length && fromCharges.length;
+    if (parents.length && !fromCharges.length && skipped) {
+      return errorResponse(
+        res,
+        `Every ${isCustomerDoc(rec.moveType) ? 'revenue' : 'cost'} charge on that selection is already `
+        + `${isCustomerDoc(rec.moveType) ? 'invoiced' : 'billed'}.`,
+        409,
+      );
+    }
+
+    // A shipment that predates charge lines still gets the standard set, so
+    // invoicing an older shipment keeps working.
+    const pulled = anyCharges ? fromCharges : list.flatMap((ref) => SHIPMENT_CHARGES.map(([product, label, account, price]) => ({
       kind: 'line',
       houseShipment: kind === 'house' ? ref : '',
       product, label, account,

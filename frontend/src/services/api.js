@@ -123,7 +123,7 @@ export const shipmentsAPI = {
   getById: (id) => api.get(`/shipments/${id}/`),
   create: (data) => api.post('/shipments/', data),
   update: (id, data) => api.put(`/shipments/${id}/`, data),
-  updateStatus: (id, data) => api.post(`/shipments/${id}/update-status/`, data),
+  updateStatus: (id, data) => api.patch(`/shipments/${id}/status`, data),
   delete: (id) => api.delete(`/shipments/${id}/`),
   getDocuments: (id) => api.get(`/shipments/${id}/documents/`),
   uploadDocument: (id, data) => api.post(`/shipments/${id}/documents/`, data, {
@@ -148,7 +148,7 @@ export const invoicesAPI = {
   update: (id, data) => api.put(`/invoices/${id}/`, data),
   delete: (id) => api.delete(`/invoices/${id}/`),
   getPaymentSummary: () => api.get('/invoices/payment-summary/'),
-  markPaid: (id, data) => api.post(`/invoices/${id}/mark-paid/`, data),
+  markPaid: (id, data) => api.post(`/invoices/${id}/payment`, data),
   sendToCustomer: (id) => api.post(`/invoices/${id}/send/`),
 };
 
@@ -445,9 +445,9 @@ export const portsAPI = {
 
 // ─── Tracking ────────────────────────────────────────────────────────────────
 export const trackingAPI = {
-  getByShipment: (shipmentId) => api.get(`/tracking/${shipmentId}/`),
-  addEvent: (shipmentId, data) => api.post(`/tracking/${shipmentId}/events/`, data),
-  getByTrackingNumber: (trackingNumber) => api.get(`/tracking/number/${trackingNumber}/`),
+  getByShipment: (shipmentId) => api.get(`/tracking/shipment/${shipmentId}`),
+  addEvent: (shipmentId, data) => api.post(`/tracking/shipment/${shipmentId}`, data),
+  getByTrackingNumber: (trackingNumber) => api.get(`/tracking/public/${trackingNumber}`),
 };
 
 // ─── Schedules ───────────────────────────────────────────────────────────────
@@ -777,8 +777,8 @@ export const pdcAPI = {
 // ─── Notifications ───────────────────────────────────────────────────────────
 export const notificationsAPI = {
   getAll: (params) => api.get('/notifications/', { params }),
-  markRead: (id) => api.post(`/notifications/${id}/read/`),
-  markAllRead: () => api.post('/notifications/read-all/'),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllRead: () => api.patch('/notifications/mark-all-read'),
   getUnreadCount: () => api.get('/notifications/unread-count/'),
 };
 

@@ -201,6 +201,34 @@ const cargoFor = async (parentType, parentId, legId) => {
 
 exports.refreshParent = refreshParent;
 
+/**
+ * Copy a quotation's charge lines onto a shipment or service job: each
+ * 'both' quote line becomes a cost charge and a revenue charge, cross-linked
+ * to each other and back to the quote line. Shared by the "From Quote"
+ * button and by every quote conversion, so a shipment created from a quote
+ * always starts with the charges it was sold at.
+ *
+ * On a multimodal quote pass `legId` to copy only that leg's charges.
+ */
+const copyQuoteCharges = async ({ quotationId, parentType, parentId, legId = null, clientId = null }) => {
+  const where = { parentType: 'quote', parentId: quotationId, isActive: true };
+  if (legId) where.multimodalLineId = legId;
+  const quoteLines = await ChargeLine.findAll({ where, order: [['sequence', 'ASC']] });
+
+  let created = 0;
+  for (const ql of quoteLines) {
+    const { cost, revenue } = splitQuoteLine(ql.toJSON(), { parentType, parentId, clientId });
+    const costRow = await ChargeLine.create(cost);
+    const revenueRow = await ChargeLine.create({ ...revenue, pairLineId: costRow.id });
+    await costRow.update({ pairLineId: revenueRow.id });
+    created += 2;
+  }
+  const totals = quoteLines.length ? await refreshParent(parentType, parentId) : null;
+  return { copied: quoteLines.length, created, totals };
+};
+
+exports.copyQuoteCharges = copyQuoteCharges;
+
 // --- list -------------------------------------------------------------------
 // Serves both the per-record charge tabs and the six technical list views.
 exports.getAll = async (req, res, next) => {
@@ -491,33 +519,16 @@ exports.copyFromQuote = async (req, res, next) => {
       );
     }
 
-    const where = { parentType: 'quote', parentId: quotationId, isActive: true };
-    // On a multimodal quote only the requested leg's charges are copied, so a
-    // shipment created from the sea leg does not inherit the road charges.
-    if (legId) where.multimodalLineId = legId;
-    const quoteLines = await ChargeLine.findAll({ where, order: [['sequence', 'ASC']] });
-    if (!quoteLines.length) {
+    const result = await copyQuoteCharges({
+      quotationId, parentType, parentId, legId, clientId: record.customerId || quote.customerId,
+    });
+    if (!result.copied) {
       return errorResponse(res, 'That quotation has no charge lines to copy', 404);
     }
-
-    const created = [];
-    for (const ql of quoteLines) {
-      const { cost, revenue } = splitQuoteLine(ql.toJSON(), {
-        parentType,
-        parentId,
-        clientId: record.customerId || quote.customerId,
-      });
-      const costRow = await ChargeLine.create(cost);
-      const revenueRow = await ChargeLine.create({ ...revenue, pairLineId: costRow.id });
-      await costRow.update({ pairLineId: revenueRow.id });
-      created.push(costRow, revenueRow);
-    }
-
-    const roll = await refreshParent(parentType, parentId);
     return successResponse(
       res,
-      { created: created.length, totals: roll },
-      `${quoteLines.length} quote charge(s) copied as ${created.length} cost and revenue charges`,
+      { created: result.created, totals: result.totals },
+      `${result.copied} quote charge(s) copied as ${result.created} cost and revenue charges`,
       201,
     );
   } catch (error) {

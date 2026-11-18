@@ -275,7 +275,8 @@ exports.approve = async (req, res, next) => {
 
 exports.reject = async (req, res, next) => {
   try {
-    const { rejectionReason } = req.body;
+    // The quote screens send `reason`; older callers send `rejectionReason`.
+    const rejectionReason = req.body.rejectionReason || req.body.reason;
     const quotation = await Quotation.findByPk(req.params.id, { include: getIncludes() });
     if (!quotation) return errorResponse(res, 'Quotation not found', 404);
 
@@ -291,6 +292,23 @@ exports.reject = async (req, res, next) => {
     if (req.io) req.io.emit('quotation:rejected', { id: quotation.id, quoteNumber: quotation.quoteNumber });
 
     return successResponse(res, quotation, 'Quotation rejected');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.cancel = async (req, res, next) => {
+  try {
+    const quotation = await Quotation.findByPk(req.params.id);
+    if (!quotation) return errorResponse(res, 'Quotation not found', 404);
+    if (['converted', 'cancelled'].includes(quotation.status)) {
+      return errorResponse(res, `A ${quotation.status} quotation cannot be cancelled`, 400);
+    }
+    await quotation.update({
+      status: 'cancelled',
+      portalCancelReason: req.body.reason || quotation.portalCancelReason,
+    });
+    return successResponse(res, quotation, 'Quotation cancelled');
   } catch (error) {
     next(error);
   }
@@ -328,6 +346,15 @@ exports.convertToFFJob = async (req, res, next) => {
     if (quotation.ffJobId) {
       return errorResponse(res, 'This quotation has already been converted to an FF Job', 400);
     }
+    // A multimodal quote becomes one house shipment per leg, so the whole
+    // quote cannot be converted in one go.
+    if (quotation.isMultimodal) {
+      return errorResponse(
+        res,
+        'This is a multimodal quotation. Create a shipment from each leg on the Routing panel.',
+        409,
+      );
+    }
 
     // Determine transport mode and job type from quotation
     const modeMap = { sea: 'SEA', air: 'AIR', land: 'ROAD', rail: 'RAIL', multimodal: 'SEA' };
@@ -358,7 +385,22 @@ exports.convertToFFJob = async (req, res, next) => {
       remarks: quotation.notes || quotation.remarks,
       assignedTo: req.body.assignedTo || null,
       createdBy: req.user.id,
-      status: 'draft',
+      // 'draft' is not an FF Job status; a new job starts as 'created'.
+      status: 'created',
+      originCountry: quotation.originCountry,
+      destinationCountry: quotation.destinationCountry,
+      originPortId: quotation.originPortId,
+      destinationPortId: quotation.destinationPortId,
+      shipperId: quotation.shipperId,
+      consigneeId: quotation.consigneeId,
+      netWeight: quotation.netWeight,
+      packages: quotation.packUnit,
+      packCount: quotation.packUnit,
+      chargeableWeight: quotation.chargeableWeight,
+      chargeableBasis: quotation.chargeableBasis,
+      weightVolume: quotation.weightVolume,
+      volumetricDivisor: quotation.volumetricDivisor,
+      salesAgentId: quotation.createdBy,
       ...req.body,
     };
 
@@ -367,6 +409,13 @@ exports.convertToFFJob = async (req, res, next) => {
     delete ffJobData.jobNumber;
 
     const ffJob = await FFJob.create(ffJobData);
+
+    // The job starts with the charges the quote was sold at.
+    const { copyQuoteCharges } = require('./chargeLineController');
+    await copyQuoteCharges({
+      quotationId: quotation.id, parentType: 'house_shipment', parentId: ffJob.id,
+      clientId: quotation.customerId,
+    });
 
     await quotation.update({ status: 'converted', ffJobId: ffJob.id });
 
@@ -431,6 +480,12 @@ exports.convertToServiceJob = async (req, res, next) => {
 
     const serviceJob = await ServiceJob.create(serviceJobData);
 
+    const { copyQuoteCharges } = require('./chargeLineController');
+    await copyQuoteCharges({
+      quotationId: quotation.id, parentType: 'service_job', parentId: serviceJob.id,
+      clientId: quotation.customerId,
+    });
+
     await quotation.update({ status: 'converted', serviceJobId: serviceJob.id });
 
     await Event.create({
@@ -465,6 +520,13 @@ exports.convertToShipment = async (req, res, next) => {
     if (!['accepted', 'approved'].includes(quotation.status)) {
       return errorResponse(res, 'Only accepted/approved quotations can be converted to shipments', 400);
     }
+    if (quotation.isMultimodal) {
+      return errorResponse(
+        res,
+        'This is a multimodal quotation. Create a shipment from each leg on the Routing panel.',
+        409,
+      );
+    }
 
     const shipment = await Shipment.create({
       quotationId: quotation.id,
@@ -488,6 +550,12 @@ exports.convertToShipment = async (req, res, next) => {
       currency: quotation.currency,
       notes: quotation.notes,
       status: 'booking_confirmed',
+    });
+
+    const { copyQuoteCharges } = require('./chargeLineController');
+    await copyQuoteCharges({
+      quotationId: quotation.id, parentType: 'house_shipment', parentId: shipment.id,
+      clientId: quotation.customerId,
     });
 
     await quotation.update({ status: 'converted' });
