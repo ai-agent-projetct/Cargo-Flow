@@ -1,4 +1,22 @@
 const { DataTypes } = require('sequelize');
+
+const TOTAL_FIELDS = ['amountUntaxed', 'amountTax', 'amountTotal', 'amountTotalCurrency', 'amountResidual'];
+
+// Totals always follow the lines.
+const computeTotals = (rec) => {
+  const lines = Array.isArray(rec.lines) ? rec.lines.filter((l) => (l.kind || 'line') === 'line') : [];
+  if (lines.length) {
+    const untaxed = lines.reduce((s, l) => s + Number(l.subtotal || 0), 0);
+    const tax = lines.reduce((s, l) => s + Number(l.vatAmount || 0), 0);
+    rec.amountUntaxed = Math.round(untaxed * 100) / 100;
+    rec.amountTax = Math.round(tax * 100) / 100;
+    rec.amountTotal = Math.round((untaxed + tax) * 100) / 100;
+    if (!rec.amountTotalCurrency || rec.currency === rec.companyCurrency) {
+      rec.amountTotalCurrency = rec.amountTotal;
+    }
+  }
+  if (rec.state !== 'posted') rec.amountResidual = rec.amountTotal;
+};
 const { sequelize } = require('../config/database');
 
 // Mirrors account.move — the single model behind Invoices, Credit Notes,
@@ -84,20 +102,18 @@ const AccountMove = sequelize.define('AccountMove', {
   tableName: 'account_moves',
   indexes: [{ fields: ['moveType'] }, { fields: ['state'] }, { fields: ['partnerId'] }],
   hooks: {
-    beforeValidate: (rec) => {
-      // Totals always follow the lines.
-      const lines = Array.isArray(rec.lines) ? rec.lines.filter((l) => (l.kind || 'line') === 'line') : [];
-      if (lines.length) {
-        const untaxed = lines.reduce((s, l) => s + Number(l.subtotal || 0), 0);
-        const tax = lines.reduce((s, l) => s + Number(l.vatAmount || 0), 0);
-        rec.amountUntaxed = Math.round(untaxed * 100) / 100;
-        rec.amountTax = Math.round(tax * 100) / 100;
-        rec.amountTotal = Math.round((untaxed + tax) * 100) / 100;
-        if (!rec.amountTotalCurrency || rec.currency === rec.companyCurrency) {
-          rec.amountTotalCurrency = rec.amountTotal;
+    beforeValidate: (rec) => computeTotals(rec),
+    // `instance.update({ lines })` saves only the fields it was given, so
+    // totals worked out in a hook were computed and then thrown away - the
+    // record kept its old totals. Recomputing here and adding the total
+    // columns to the save's field list is what makes them persist.
+    beforeSave: (rec, options) => {
+      computeTotals(rec);
+      if (Array.isArray(options.fields)) {
+        for (const f of TOTAL_FIELDS) {
+          if (!options.fields.includes(f)) options.fields.push(f);
         }
       }
-      if (rec.state !== 'posted') rec.amountResidual = rec.amountTotal;
     },
   },
 });

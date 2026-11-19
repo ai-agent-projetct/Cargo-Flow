@@ -283,7 +283,11 @@ exports.confirm = async (req, res, next) => {
       order: [['name', 'DESC']], attributes: ['name'], raw: true,
     });
     const next_ = last ? Number(String(last.name).split('/').pop()) + 1 : 1;
-    const number = `${meta.prefix}/${year}/${String(next_).padStart(5, '0')}`;
+    // A document reset to draft and confirmed again keeps the number it was
+    // first issued; taking a new one each time left gaps in the sequence.
+    const number = rec.name && rec.name !== '/'
+      ? rec.name
+      : `${meta.prefix}/${year}/${String(next_).padStart(5, '0')}`;
 
     // Customer documents debit receivable and credit sales and output VAT.
     // Vendor documents debit cost and input VAT and credit payable - they
@@ -297,7 +301,7 @@ exports.confirm = async (req, res, next) => {
       label: rec.label || number,
       journalItems,
       activityLog: pushLog(rec, logEntry(actorName(req), 'Invoice validated', [
-        { field: 'Number', from: '/', to: number },
+        { field: 'Number', from: rec.name || '/', to: number },
         { field: 'Status', from: 'Draft', to: 'Posted' },
         { field: 'Label', from: '', to: number },
       ])),
