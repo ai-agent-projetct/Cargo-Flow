@@ -386,9 +386,13 @@ exports.allowedSources = async (req, res, next) => {
     const agency = await models.AgencyJob.findAll({
       attributes: ['id', 'name', 'hblNumber'], order: [['createdAt', 'DESC']], limit: 200, raw: true,
     });
+    // SearatesERP Agency clone jobs too.
+    const OgJob = require('../odoo/registry').MODELS['nvocc.service.job'];
+    const og = OgJob ? await OgJob.findAll({ attributes: ['id', 'name', 'hbl_number'], order: [['id', 'DESC']], limit: 200, raw: true }) : [];
     return successResponse(res, [
       ...rows.map((r) => ({ id: r.id, ref: r.jobNumber, label: r.jobNumber })),
       ...agency.map((r) => ({ id: r.id, ref: r.name, label: `${r.name}${r.hblNumber ? ` (${r.hblNumber})` : ''}` })),
+      ...og.map((r) => ({ id: `og-${r.id}`, ref: r.name, label: `${r.name}${r.hbl_number ? ` (${r.hbl_number})` : ''}` })),
     ], 'Service jobs retrieved');
   } catch (error) {
     next(error);

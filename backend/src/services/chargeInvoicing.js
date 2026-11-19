@@ -68,10 +68,93 @@ const resolveParents = async (models, kind, refs) => {
   const agency = models.AgencyJob ? await models.AgencyJob.findAll({
     where: { [Op.or]: [{ id: { [Op.in]: list } }, { name: { [Op.in]: list } }, { hblNumber: { [Op.in]: list } }] },
   }) : [];
+  // SearatesERP Agency clone jobs (og_nvocc_service_job), by job no or BL.
+  const OgJob = require('../odoo/registry').MODELS['nvocc.service.job'];
+  const og = OgJob ? await OgJob.findAll({
+    where: { [Op.or]: [{ name: { [Op.in]: list } }, { hbl_number: { [Op.in]: list } }] }, raw: true,
+  }) : [];
   return [
     ...rows.map((r) => ({ parentType: 'service_job', record: r, ref: r.jobNumber })),
     ...agency.map((r) => ({ parentType: 'nvocc_job', record: r, ref: r.name })),
+    ...og.map((r) => ({ parentType: 'og_job', record: r, ref: r.name })),
   ];
+};
+
+// Charge models of a clone job, by side.
+const OG_CHARGES = { revenue: ['nvocc.revenue.charge', 'nvocc.detention.charge', 'nvocc.principal.charge'], cost: ['nvocc.cost.charge'] };
+
+/** Invoice lines from a clone job's charge lines (og_* tables). */
+const ogInvoiceLines = async (move, parent) => {
+  const R = require('../odoo/registry');
+  const customer = isCustomerDoc(move.moveType);
+  const settledField = customer ? 'actual_invoiced_amount' : 'actual_billed_amount';
+  const taxes = new Map((await R.OgRef.findAll({ where: { model: 'account.tax' }, raw: true })).map((t) => [String(t.ref_id), t]));
+  const currencies = new Map((await R.OgRef.findAll({ where: { model: 'res.currency' }, raw: true })).map((c) => [String(c.ref_id), c.name]));
+  const lines = [];
+  let skipped = 0;
+  for (const m of OG_CHARGES[customer ? 'revenue' : 'cost']) {
+    const Model = R.MODELS[m];
+    if (!Model) continue;
+    let rows = await Model.findAll({ where: { nvocc_service_job_id: String(parent.record.id) }, order: [['id', 'ASC']], raw: true });
+    if (move.partnerId && rows.some((c) => c.partner_id === move.partnerId)) rows = rows.filter((c) => c.partner_id === move.partnerId);
+    for (const c of rows) {
+      const native = num(c.total_amount_after_discount) || num(c.total_currency_amount);
+      const remaining = native - num(c[settledField]);
+      if (remaining <= 0.009 && !isRefund(move.moveType)) { skipped += 1; continue; }
+      const fx = num(c.amount_conversion_rate) || 1;
+      const qty = num(c.quantity) || 1;
+      const ids = Array.isArray(c.tax_ids) ? c.tax_ids : (typeof c.tax_ids === 'string' ? JSON.parse(c.tax_ids || '[]') : []);
+      const taxRate = ids.reduce((s, id) => s + num(((taxes.get(String(id)) || {}).data || {}).amount), 0);
+      const share = native ? remaining / native : 1;
+      const subtotal = money(num(c.total_amount) * share);
+      lines.push({
+        kind: 'line',
+        serviceJob: parent.ref,
+        product: c.charge_description,
+        label: c.charge_description,
+        account: customer ? ACCOUNTS.revenue : ACCOUNTS.cost,
+        exRate: fx,
+        amountQty: num(c.amount_rate),
+        chargeCurrency: currencies.get(String(c.amount_currency_id)) || move.currency,
+        analyticAccount: '',
+        analyticTags: [],
+        quantity: qty,
+        price: qty ? money(subtotal / qty) : subtotal,
+        discount: 0,
+        taxes: `VAT ${taxRate}%`,
+        taxRate,
+        vatAmount: money(subtotal * taxRate / 100),
+        subtotal,
+        chargeLineId: `og:${m}:${c.id}`,
+        chargeParentType: 'og_job',
+        chargeParentId: parent.record.id,
+        // In the charge's own currency: what posting moves on it.
+        nativeAmount: money(remaining),
+        companyAmount: money(subtotal * (1 + taxRate / 100)),
+      });
+    }
+  }
+  return { lines, skipped };
+};
+
+/** Move clone charge lines by what a document charged (+1 post, -1 reverse). */
+const applyToOgCharges = async (move, direction) => {
+  const R = require('../odoo/registry');
+  const customer = isCustomerDoc(move.moveType);
+  const field = customer ? 'actual_invoiced_amount' : 'actual_billed_amount';
+  const jobs = new Set();
+  for (const l of (move.lines || []).filter((x) => String(x.chargeLineId || '').startsWith('og:'))) {
+    const [, m, id] = String(l.chargeLineId).split(':');
+    const Model = R.MODELS[m];
+    if (!Model) continue;
+    const c = await Model.findByPk(Number(id), { raw: true });
+    if (!c) continue;
+    const delta = num(l.nativeAmount) * direction * (isRefund(move.moveType) ? -1 : 1);
+    await Model.update({ [field]: money(Math.max(0, num(c[field]) + delta)) }, { where: { id: c.id } });
+    await require('../odoo/compute').recompute(m, [c.id]);
+    jobs.add(c.nvocc_service_job_id);
+  }
+  return [...jobs];
 };
 
 /**
@@ -89,6 +172,12 @@ const buildInvoiceLines = async (models, move, parents) => {
   const lines = [];
   let skipped = 0;
   for (const p of parents) {
+    if (p.parentType === 'og_job') {
+      const og = await ogInvoiceLines(move, p);
+      lines.push(...og.lines);
+      skipped += og.skipped;
+      continue;
+    }
     let charges = await ChargeLine.findAll({
       where: {
         parentType: p.parentType,
@@ -224,7 +313,9 @@ const applyToCharges = async (models, move, direction) => {
   const customer = isCustomerDoc(move.moveType);
   const refund = isRefund(move.moveType);
 
+  await applyToOgCharges(move, direction);
   for (const l of lines) {
+    if (String(l.chargeLineId).startsWith('og:')) continue;
     const c = await ChargeLine.findByPk(l.chargeLineId);
     if (!c) continue;
     const amount = money(num(l.companyAmount) * direction);

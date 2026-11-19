@@ -84,7 +84,8 @@ const beforeCreate = async (m, vals) => {
 };
 
 const beforeWrite = async (m, ids, vals) => vals;
-const afterWrite = async () => {};
+// Stored computed fields follow every write (compute.js).
+const afterWrite = async (m, ids) => require('./compute').recompute(m, ids);
 const beforeUnlink = async () => {};
 const defaults = async () => ({});
 

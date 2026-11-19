@@ -232,4 +232,40 @@ button('account.transfer.config', 'action_disable', async (ids, kw, ctx) => set(
 button('account.cheque.book', 'action_confirm_cheque_book', async (ids, kw, ctx) => set('account.cheque.book', ids, { state: 'confirm' }, ctx));
 button('account.cheque.book', 'action_reset_to_draft', async (ids, kw, ctx) => set('account.cheque.book', ids, { state: 'draft' }, ctx));
 
+// ── Counters the forms show (smart buttons) ─────────────────────────────────
+const { registerCompute } = require('./orm');
+const movesFor = async (job, types) => {
+  const { AccountMove } = require('../models');
+  const { sequelize } = AccountMove;
+  // serviceJobRefs is a JSON array; LIKE does not match JSON columns.
+  return AccountMove.count({
+    where: {
+      moveType: { [Op.in]: types },
+      [Op.and]: sequelize.where(sequelize.fn('JSON_CONTAINS', sequelize.col('serviceJobRefs'), sequelize.fn('JSON_QUOTE', job.name || '')), 1),
+    },
+  });
+};
+registerCompute(JOB, 'invoice_count', (r) => movesFor(r, ['out_invoice']));
+registerCompute(JOB, 'vendor_bill_count', (r) => movesFor(r, ['in_invoice']));
+registerCompute(JOB, 'credit_note_count', (r) => movesFor(r, ['out_refund', 'in_refund']));
+registerCompute(JOB, 'debit_note_count', (r) => movesFor(r, ['out_debit', 'in_debit']));
+registerCompute(JOB, 'maintenance_request_count', (r) => (R.MODELS['maintenance.request'] ? R.MODELS['maintenance.request'].count({ where: { job_id: String(r.id) } }) : 0));
+registerCompute(JOB, 'document_count', (r) => (R.MODELS['nvocc.service.job.document'] ? R.MODELS['nvocc.service.job.document'].count({ where: { service_job_id: String(r.id) } }).catch(() => 0) : 0));
+registerCompute(JOB, 'deposit_amount', async (r) => {
+  if (!R.MODELS['security.deposit']) return 0;
+  const deps = await R.MODELS['security.deposit'].findAll({ where: { service_job_id: String(r.id) }, raw: true });
+  return deps.reduce((s, d) => s + (Number(d.refundable_amount_currency_signed) || 0), 0);
+});
+registerCompute(PB, 'export_job_count', (r) => R.MODELS[JOB].count({ where: { pre_booking_id: String(r.id) } }));
+const pbLineSum = (field) => async (r) => {
+  if (!R.MODELS['nvocc.pre.booking.line']) return 0;
+  const lines = await R.MODELS['nvocc.pre.booking.line'].findAll({ where: { pre_booking_id: String(r.id) }, attributes: [field], raw: true });
+  return Math.round(lines.reduce((s, l) => s + (Number(l[field]) || 0), 0) * 100) / 100;
+};
+registerCompute(PB, 'estimated_total_cost', pbLineSum('total_cost_amount'));
+registerCompute(PB, 'estimated_total_revenue', pbLineSum('total_sell_amount'));
+registerCompute(MS, 'service_job_count', (r) => R.MODELS[JOB].count({ where: { parent_id: String(r.id) } }));
+registerCompute(MAN, 'service_job_count', (r) => R.MODELS[JOB].count({ where: { job_manifest_id: String(r.id) } }));
+registerCompute(MR, 'repair_request_count', (r) => R.MODELS[RR].count({ where: { request_id: String(r.id) } }));
+
 module.exports = {};

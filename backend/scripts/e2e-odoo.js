@@ -77,6 +77,29 @@ const ok = (label, cond, detail = '') => {
   const edi = await kw('nvocc.service.job', 'action_export_edi', [[job.id]]);
   ok('Export EDI downloads XML', edi.type === 'cf.download' && edi.download.content.includes(job.name));
 
+  // --- Charges compute, then invoice from CargoFlo Accounting -----------------
+  const product = (await kw('product.product', 'name_search', [], { name: 'Freight', limit: 1 }))[0] || (await kw('product.product', 'name_search', [], { name: '', limit: 1 }))[0];
+  const usd = (await kw('res.currency', 'name_search', [], { name: 'USD', limit: 1 }))[0];
+  const cust = (await call('GET', '/organizations?limit=1')).j;
+  const custId = cust && cust.data && (Array.isArray(cust.data) ? cust.data[0] : (cust.data.organizations || cust.data.rows || [])[0]);
+  await kw('nvocc.service.job', 'write', [[job.id], {
+    customer_id: custId && custId.id,
+    revenue_line_ids: [[0, 0, { product_id: product && product[0], charge_description: 'OCEAN FREIGHT', quantity: 2, amount_rate: 100, amount_currency_id: usd && usd[0], amount_conversion_rate: 3.6725, partner_id: custId && custId.id }]],
+  }]);
+  let [jr] = await kw('nvocc.service.job', 'read', [[job.id], ['estimated_revenue', 'revenue_line_ids', 'teu_total']]);
+  ok('charge totals roll up to the job', Math.abs(jr.estimated_revenue - 734.5) < 0.01, `est ${jr.estimated_revenue} TEU ${jr.teu_total}`);
+  let r2 = await call('POST', '/accounting/moves?menu=invoices', { partner: custId && (custId.companyName || custId.name), partnerId: custId && custId.id, currency: 'AED', invoiceDate: new Date().toISOString().slice(0, 10) });
+  const inv = r2.j.data;
+  r2 = await call('POST', `/accounting/moves/${inv.id}/pull-charges`, { kind: 'service_job', refs: [job.name] });
+  const pulled = (r2.j.data && r2.j.data.lines || []).filter((l) => String(l.chargeLineId || '').startsWith('og:'));
+  ok('invoice pulls the clone job charges', pulled.length === 1, `${r2.code} ${r2.j.message}`);
+  r2 = await call('POST', `/accounting/moves/${inv.id}/confirm`, { overrideCreditLimit: true });
+  ok('invoice posts', r2.code === 200, `${r2.code} ${r2.j.message}`);
+  const [chg] = await kw('nvocc.revenue.charge', 'read', [jr.revenue_line_ids, ['status', 'actual_invoiced_amount']]);
+  ok('charge marked fully invoiced', chg.status === 'fully_invoiced', JSON.stringify(chg));
+  [jr] = await kw('nvocc.service.job', 'read', [[job.id], ['received_revenue', 'due_revenue', 'invoice_count', 'state']]);
+  ok('job received revenue and invoice count follow', jr.received_revenue > 0 && jr.invoice_count === 1, JSON.stringify(jr));
+
   // --- Import job -> manifest -> index -> D/O ---------------------------------
   const impId = await kw('nvocc.service.job', 'create', [{ shipment_type_id: 2, cargo_type_id: cargo && cargo.id, shipment_date: new Date().toISOString().slice(0, 10), hbl_number: `E2E${Date.now()}` }]);
   const vessel = (await kw('freight.vessel', 'name_search', [], { name: '', limit: 1 }))[0];
