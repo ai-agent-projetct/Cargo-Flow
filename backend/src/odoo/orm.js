@@ -149,7 +149,7 @@ const relatedValue = async (m, rec, related) => {
     } else {
       const e = external(f.relation);
       const r = e ? await e.Model.findByPk(id, { raw: true }) : null;
-      cur = r ? { ...r, name: r.companyName || r.name, email: r.email, phone: r.phone, street: r.street, city: r.city } : null;
+      cur = r ? { ...r, name: r.companyName || r.name, street: r.streetName, street2: r.street2, zip: r.zip } : null;
     }
     model = f.relation;
   }

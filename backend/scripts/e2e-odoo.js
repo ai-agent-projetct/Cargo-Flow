@@ -56,6 +56,42 @@ const ok = (label, cond, detail = '') => {
   const grouped = await kw('nvocc.pre.booking', 'read_group', [[], ['state'], ['state']]);
   ok('read_group by state', Array.isArray(grouped) && grouped.some((g) => g.state === 'draft'), JSON.stringify(grouped).slice(0, 120));
   ok('unlink', (await kw('nvocc.pre.booking', 'unlink', [[id]])) === true);
+
+  // --- Buttons: booking -> CRO -> approval -> export job ----------------------
+  const pbId = await kw('nvocc.pre.booking', 'create', [{
+    date: new Date().toISOString().slice(0, 10), shipment_type_id: 1, cargo_type_id: cargo && cargo.id, port_of_loading_id: pol && pol[0], allow_approval: true,
+    pre_booking_container_line_ids: ctype ? [[0, 0, { container_type_id: ctype[0], count: 2 }]] : [],
+  }]);
+  const ask = await kw('nvocc.pre.booking', 'action_change_status', [[pbId]]);
+  ok('Change Status asks for the new status', ask && ask.type === 'cf.input' && ask.input.options.length > 0);
+  for (const [m, kwargs] of [['cf_set_state', { value: 'cro_generated' }], ['action_send_booking_internal_approval', {}], ['approve_booking_internal_team', {}]]) {
+    const r = await kw('nvocc.pre.booking', m, [[pbId]], kwargs);
+    ok(`booking ${m}`, !(r && r.ERR), JSON.stringify(r).slice(0, 80));
+  }
+  const [pb2] = await kw('nvocc.pre.booking', 'read', [[pbId], ['state']]);
+  ok('booking approved', pb2.state === 'accept', pb2.state);
+  const act = await kw('nvocc.pre.booking', 'action_create_export_job', [[pbId]]);
+  ok('Convert To Export Job opens the new job', act && act.res_model === 'nvocc.service.job' && act.res_id, JSON.stringify(act).slice(0, 120));
+  const [job] = await kw('nvocc.service.job', 'read', [[act.res_id], ['name', 'state', 'container_ids', 'pre_booking_id', 'shipment_type_id']]);
+  ok('export job numbered with booked containers', /^SEA-E-/.test(job.name) && job.container_ids.length === 2 && job.pre_booking_id[0] === pbId, `${job.name} ${job.container_ids.length} boxes`);
+  const edi = await kw('nvocc.service.job', 'action_export_edi', [[job.id]]);
+  ok('Export EDI downloads XML', edi.type === 'cf.download' && edi.download.content.includes(job.name));
+
+  // --- Import job -> manifest -> index -> D/O ---------------------------------
+  const impId = await kw('nvocc.service.job', 'create', [{ shipment_type_id: 2, cargo_type_id: cargo && cargo.id, shipment_date: new Date().toISOString().slice(0, 10), hbl_number: `E2E${Date.now()}` }]);
+  const vessel = (await kw('freight.vessel', 'name_search', [], { name: '', limit: 1 }))[0];
+  const manId = await kw('nvocc.manifest', 'create', [{ shipment_type_id: 2, vessel_id: vessel && vessel[0], voyage_number: 'E2E', igm_no: '9999', starting_index: 7, country_id: 1, voyage_id: ((await kw('freight.voyage', 'name_search', [], { name: '', limit: 1 }))[0] || [])[0], last_port_call_id: pol && pol[0] }]);
+  ok('manifest created', typeof manId === 'number', JSON.stringify(manId).slice(0, 120));
+  if (typeof manId === 'number') {
+    await kw('nvocc.manifest', 'cf_attach', [[manId]], { value: [impId] });
+    await kw('nvocc.manifest', 'action_update_job_index', [[manId]]);
+    const [imp] = await kw('nvocc.service.job', 'read', [[impId], ['index_number', 'igm_number', 'job_manifest_id']]);
+    ok('manifest attach + index', imp.index_number === '007' && imp.igm_number === '9999', JSON.stringify(imp));
+  }
+  await kw('nvocc.service.job', 'action_request_for_direct_do', [[impId]]);
+  await kw('nvocc.service.job', 'action_do_generate', [[impId]]);
+  const [impDo] = await kw('nvocc.service.job', 'read', [[impId], ['state', 'do_number', 'do_validity']]);
+  ok('D/O generated', impDo.state === 'd_o_generated' && /^DO-/.test(impDo.do_number), JSON.stringify(impDo));
   console.log(`\n${failed ? `${failed} FAILED` : 'ALL PASS'}`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.error('SCRIPT ERROR', e); process.exit(1); });

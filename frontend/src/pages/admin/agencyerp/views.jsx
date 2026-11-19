@@ -279,6 +279,7 @@ export const FormView = ({
   const [mode, setMode] = useState(id ? 'readonly' : 'edit');
   const [busy, setBusy] = useState(false);
   const [lineDlg, setLineDlg] = useState(null);
+  const [ask, setAsk] = useState(null);
   const root = useMemo(() => parseArch(fv.arch), [fv.arch]);
   const fields = useMemo(() => fv.fields || {}, [fv.fields]);
   const values = useMemo(() => ({ ...(record || {}), ...changes }), [record, changes]);
@@ -393,11 +394,34 @@ export const FormView = ({
     try {
       if (type === 'object') {
         const res = await rpc(model, name, [[recId]], { context: ctx });
-        if (res && typeof res === 'object' && res.type) onOpenAction(res, { active_id: recId, active_model: model });
-        else await load();
+        await handleResult(res, recId, ctx);
       } else if (type === 'action') {
         onOpenAction({ type: 'ir.actions.act_window', id: Number(name), context: ctx }, { active_id: recId, active_model: model });
       }
+    } catch (e) { toast.error(errMsg(e)); }
+  };
+
+  // What a button returned: an action to open, a question to ask, a file.
+  const handleResult = async (res, recId, ctx) => {
+    if (!res || typeof res !== 'object' || !res.type) { await load(); return; }
+    if (res.type === 'cf.input') { setAsk({ ...res, recId, ctx }); return; }
+    if (res.type === 'cf.download') {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([res.download.content], { type: res.download.mime }));
+      a.download = res.download.filename;
+      a.click();
+      await load();
+      return;
+    }
+    if (res.type === 'cf.url') { window.location.assign(res.url); return; }
+    onOpenAction(res, { active_id: recId, active_model: model });
+  };
+  const answer = async (value) => {
+    const q = ask;
+    setAsk(null);
+    try {
+      const res = await rpc(model, q.method, [[q.recId]], { value, context: q.ctx });
+      await handleResult(res, q.recId, q.ctx);
     } catch (e) { toast.error(errMsg(e)); }
   };
 
@@ -504,6 +528,50 @@ export const FormView = ({
         )}
       </div>
       {lineDlg && <LineDialog model={lineDlg.model} values={lineDlg.values} readonly={mode !== 'edit'} onClose={() => setLineDlg(null)} onSave={saveRow} />}
+      {ask && <AskDialog ask={ask} onCancel={() => setAsk(null)} onOk={answer} />}
+    </div>
+  );
+};
+
+/** A button's question: pick a value, type a reason, or choose records. */
+const AskDialog = ({ ask, onCancel, onOk }) => {
+  const { kind, options = [], label, model: m, domain = [] } = ask.input || {};
+  const [value, setValue] = useState(kind === 'records' ? [] : (options[0] ? options[0][0] : ''));
+  const [recs, setRecs] = useState(null);
+  useEffect(() => {
+    if (kind !== 'records') return;
+    rpc(m, 'search_read', [], { domain, fields: ['display_name'], limit: 500, count: false }).then(setRecs).catch(() => setRecs([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-24 px-4">
+      <div className="bg-white rounded shadow-xl w-full max-w-lg">
+        <div className="px-4 py-2 border-b text-base">{ask.title}</div>
+        <div className="p-4 text-[13px]">
+          {kind === 'select' && (
+            <select className="w-full border-b border-slate-300 py-1" value={value} onChange={(e) => setValue(e.target.value)}>
+              {options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          )}
+          {kind === 'text' && (<><div className="font-semibold mb-1">{label}</div><textarea rows={3} className="w-full border rounded p-1" value={value} onChange={(e) => setValue(e.target.value)} /></>)}
+          {kind === 'records' && (
+            <div className="max-h-72 overflow-y-auto border rounded">
+              {!recs && <p className="p-2 text-slate-400">Loading…</p>}
+              {recs && !recs.length && <p className="p-2 text-slate-400">No records to choose.</p>}
+              {(recs || []).map((r) => (
+                <label key={r.id} className="flex items-center gap-2 px-2 py-1 hover:bg-[#f2f2f2]">
+                  <input type="checkbox" checked={value.includes(r.id)} onChange={() => setValue((v) => (v.includes(r.id) ? v.filter((x) => x !== r.id) : [...v, r.id]))} />
+                  {r.display_name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2 px-4 py-2 border-t">
+          <button type="button" className="px-3 py-1 rounded bg-[#714B67] text-white text-[13px] disabled:opacity-40" disabled={kind === 'text' ? !String(value).trim() : (kind === 'records' && !value.length)} onClick={() => onOk(value)}>Confirm</button>
+          <button type="button" className="px-3 py-1 rounded border text-[13px]" onClick={onCancel}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 };

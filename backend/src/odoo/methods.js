@@ -42,6 +42,9 @@ const refCode = async (model, id, field = 'code') => {
   return null;
 };
 
+// Upstream defaults are placeholders ('/', 'New', 'New Pre Booking Number').
+const placeholder = (x) => !x || /^(\/|New\b)/.test(String(x));
+
 // Upstream formats, as seen on the instance's records.
 const SEQUENCES = {
   'nvocc.pre.booking': async (v) => {
@@ -49,8 +52,8 @@ const SEQUENCES = {
     const exp = Number(v.shipment_type_id) === 2 ? 'IMP' : 'EXP';
     return {
       name: await nextNumber('nvocc.pre.booking', 'name', `PB-SEA-${exp}-${String(cargo).toUpperCase()}/${yyyy()}/`, 5),
-      cro_no: v.cro_no || await nextNumber('nvocc.pre.booking', 'cro_no', `${yyyy()}-`, 5),
-      gate_pass_no: v.gate_pass_no || await nextNumber('nvocc.pre.booking', 'gate_pass_no', `GP-${yyyy()}-`, 5),
+      cro_no: placeholder(v.cro_no) ? await nextNumber('nvocc.pre.booking', 'cro_no', `${yyyy()}-`, 5) : v.cro_no,
+      gate_pass_no: placeholder(v.gate_pass_no) ? await nextNumber('nvocc.pre.booking', 'gate_pass_no', `GP-${yyyy()}-`, 5) : v.gate_pass_no,
     };
   },
   'nvocc.service.job': async (v) => {
@@ -58,7 +61,7 @@ const SEQUENCES = {
     const dir = Number(v.shipment_type_id) === 2 ? 'I' : 'E';
     return {
       name: await nextNumber('nvocc.service.job', 'name', `SEA-${dir}-${String(cargo).toUpperCase()}-${yyyy()}-`, 5),
-      gate_pass_no: v.gate_pass_no || await nextNumber('nvocc.service.job', 'gate_pass_no', `GP-${yyyy()}-`, 5),
+      gate_pass_no: placeholder(v.gate_pass_no) ? await nextNumber('nvocc.service.job', 'gate_pass_no', `GP-${yyyy()}-`, 5) : v.gate_pass_no,
     };
   },
   'nvocc.master.service.job': async () => ({ name: await nextNumber('nvocc.master.service.job', 'name', `CONS-${yyyy()}-`, 5) }),
@@ -75,8 +78,7 @@ const SEQUENCES = {
 const beforeCreate = async (m, vals) => {
   if (SEQUENCES[m]) {
     const seq = await SEQUENCES[m](vals);
-    // Upstream defaults are placeholders ('/', 'New', 'New Pre Booking Number').
-    for (const [k, v] of Object.entries(seq)) if (!vals[k] || /^(\/|New\b)/.test(String(vals[k]))) vals[k] = v;
+    for (const [k, v] of Object.entries(seq)) if (placeholder(vals[k])) vals[k] = v;
   }
   return vals;
 };
@@ -119,3 +121,6 @@ module.exports = {
   MENU_ROOTS, MENU_REPORTS, viewById, beforeCreate, beforeWrite, afterWrite, beforeUnlink, defaults, onchange,
   callButton, button, BUTTONS, nextNumber,
 };
+
+// Registers the form buttons (needs `button` above, so it loads last).
+require('./buttons');

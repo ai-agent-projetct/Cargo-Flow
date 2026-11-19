@@ -24,7 +24,7 @@ const MASTER_DATA = fs.existsSync(MASTERS) ? JSON.parse(fs.readFileSync(MASTERS,
 
 // Upstream models that are CargoFlo records.
 const EXTERNAL = {
-  'res.partner': { key: 'org', model: 'Organization', label: (r) => (r.customerCode ? `${r.customerCode}: ${r.companyName || r.name}` : (r.companyName || r.name)), search: ['name', 'companyName', 'customerCode'], attrs: ['id', 'name', 'companyName', 'customerCode', 'email', 'phone', 'street', 'city', 'country', 'partyTypes'] },
+  'res.partner': { key: 'org', model: 'Organization', label: (r) => (r.customerCode ? `${r.customerCode}: ${r.companyName || r.name}` : (r.companyName || r.name)), search: ['name', 'companyName', 'customerCode'], attrs: ['id', 'name', 'companyName', 'customerCode', 'email', 'phone', 'streetName', 'city', 'country', 'partyTypes'] },
   'res.users': { key: 'user', model: 'User', label: (r) => r.name || r.email, search: ['name', 'email'], attrs: ['id', 'name', 'email'] },
   'account.move': { key: 'move', model: 'AccountMove', label: (r) => (r.name && r.name !== '/' ? r.name : `Draft ${String(r.id).slice(0, 8)}`), search: ['name', 'partner'], attrs: ['id', 'name', 'partner', 'moveType', 'state', 'amountTotal'] },
   'account.payment': { key: 'payment', model: 'AccountPayment', label: (r) => r.name || r.id, search: ['name'], attrs: ['id', 'name'] },
