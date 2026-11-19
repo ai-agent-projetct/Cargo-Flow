@@ -56,6 +56,14 @@ const connectDB = async () => {
     const { ensureAgencyTables, seedAgency } = require('../agency/seed');
     await ensureAgencyTables(sequelize);
     await seedAgency();
+    // SearatesERP Agency clone: upstream models, views and master data.
+    try {
+      const { ensureOdooTables, seedOdooMasters } = require('../odoo/seed');
+      await ensureOdooTables(sequelize);
+      await seedOdooMasters();
+    } catch (e) {
+      console.error('AGENCY CLONE SETUP FAILED:', e.stack || e.message);
+    }
   } catch (error) {
     console.error('Unable to connect to database:', error.message);
     process.exit(1);

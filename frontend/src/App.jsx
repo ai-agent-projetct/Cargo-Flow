@@ -26,6 +26,7 @@ import CrmLayout from './pages/admin/crm/CrmLayout';
 import PdcPayments from './pages/admin/accounting/PdcPayments';
 import EtlLayout from './pages/admin/etl/EtlLayout';
 import AgencyLayout from './pages/admin/agency/AgencyLayout';
+import AgencyErp from './pages/admin/agencyerp/AgencyErp';
 // Operations / CRM / ETL / Agency reports by id, on the shared ReportView.
 import OpsReport from './pages/admin/OpsReport';
 
@@ -181,6 +182,8 @@ function App() {
               <Route path="crm/*" element={<CrmLayout />} />
               {/* Liner Agency / NVOCC — the SearatesERP Agency instance */}
               <Route path="agency/*" element={<AgencyLayout />} />
+              {/* Exact clone of the SearatesERP Agency instance (upstream views) */}
+              <Route path="agency-erp/*" element={<AgencyErp />} />
 
               {/* Operations, Sales and ETL reports from the shared report
                   engine; the id in the path picks the report. */}

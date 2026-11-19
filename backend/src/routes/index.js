@@ -130,6 +130,7 @@ const registerRoutes = (app, io) => {
   // Sales & CRM: prospects, leads, stages, teams, targets, quote templates.
   app.use('/api/crm', crmRoutes);
   app.use('/api/agency', require('./agency'));
+  app.use('/api/odoo', require('./odoo'));
   // Charge lines behind every quote, shipment, service job and pro forma.
   app.use('/api/charge-lines', chargeLineRoutes);
   // Multimodal quote legs.

@@ -36,6 +36,8 @@ const adminNavigation = [
   // NVOCC / liner agency: pre-booking, sea export/import jobs, manifests,
   // container tracking, EDI, maintenance & repair.
   { label: 'Liner Agency', href: '/admin/agency', icon: Ship },
+  // Exact clone of the SearatesERP Agency instance, rendered from its views.
+  { label: 'SearatesERP Agency', href: '/admin/agency-erp', icon: Anchor },
 
   { section: 'TMS' },
   { label: 'TMS Requests', href: '/admin/tms', icon: Truck },
