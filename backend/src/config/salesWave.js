@@ -251,6 +251,8 @@ const dropPartyForeignKeys = async (qi, sequelize) => {
 // `quote_legs`. COURIER is a mode in its own right because it bills on a
 // 1:5000 volumetric divisor rather than air's 1:6000.
 const ENUM_ADDITIONS = [
+  // Liner Agency jobs and pre-bookings carry charge lines too.
+  { table: 'charge_lines', column: 'parentType', values: ['quote', 'house_shipment', 'master_shipment', 'service_job', 'pro_forma', 'nvocc_job', 'nvocc_pre_booking'] },
   { table: 'quotations', column: 'transportMode', values: ['SEA', 'AIR', 'ROAD', 'RAIL', 'COURIER', 'MULTIMODAL'] },
   { table: 'quotations', column: 'direction', values: ['EXPORT', 'IMPORT', 'LOCAL', 'CROSS_TRADE'] },
   { table: 'ff_jobs', column: 'transportMode', values: ['AIR', 'SEA', 'ROAD', 'RAIL', 'COURIER', 'MULTIMODAL'] },

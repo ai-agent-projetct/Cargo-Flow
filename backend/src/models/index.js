@@ -427,3 +427,12 @@ module.exports = {
   RateRequestLine,
   PdcPayment,
 };
+
+// Liner Agency / NVOCC resources are generated from agency/spec.js. The two
+// that own charge lines are exported by name so the charge and invoicing code
+// can load them like any other parent.
+const { AGENCY_MODELS } = require('../agency/models');
+
+module.exports.AGENCY_MODELS = AGENCY_MODELS;
+module.exports.AgencyJob = AGENCY_MODELS.job;
+module.exports.AgencyPreBooking = AGENCY_MODELS['pre-booking'];

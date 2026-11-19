@@ -382,8 +382,14 @@ exports.allowedSources = async (req, res, next) => {
     const rows = await ServiceJob.findAll({
       attributes: ['id', 'jobNumber'], order: [['createdAt', 'DESC']], limit: 200, raw: true,
     });
-    return successResponse(res, rows.map((r) => ({ id: r.id, ref: r.jobNumber, label: r.jobNumber })),
-      'Service jobs retrieved');
+    // Liner Agency jobs are invoiced from the same picker.
+    const agency = await models.AgencyJob.findAll({
+      attributes: ['id', 'name', 'hblNumber'], order: [['createdAt', 'DESC']], limit: 200, raw: true,
+    });
+    return successResponse(res, [
+      ...rows.map((r) => ({ id: r.id, ref: r.jobNumber, label: r.jobNumber })),
+      ...agency.map((r) => ({ id: r.id, ref: r.name, label: `${r.name}${r.hblNumber ? ` (${r.hblNumber})` : ''}` })),
+    ], 'Service jobs retrieved');
   } catch (error) {
     next(error);
   }

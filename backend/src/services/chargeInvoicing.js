@@ -64,7 +64,14 @@ const resolveParents = async (models, kind, refs) => {
   const rows = await ServiceJob.findAll({
     where: { [Op.or]: [{ id: { [Op.in]: list } }, { jobNumber: { [Op.in]: list } }] },
   });
-  return rows.map((r) => ({ parentType: 'service_job', record: r, ref: r.jobNumber }));
+  // Liner Agency jobs bill through the same "service job" source.
+  const agency = models.AgencyJob ? await models.AgencyJob.findAll({
+    where: { [Op.or]: [{ id: { [Op.in]: list } }, { name: { [Op.in]: list } }, { hblNumber: { [Op.in]: list } }] },
+  }) : [];
+  return [
+    ...rows.map((r) => ({ parentType: 'service_job', record: r, ref: r.jobNumber })),
+    ...agency.map((r) => ({ parentType: 'nvocc_job', record: r, ref: r.name })),
+  ];
 };
 
 /**
@@ -77,7 +84,7 @@ const buildInvoiceLines = async (models, move, parents) => {
   const side = customer ? 'revenue' : 'cost';
   const invoiceCurrency = move.currency || move.companyCurrency || 'AED';
   const companyCurrency = move.companyCurrency || 'AED';
-  const kindLabel = { house_shipment: 'houseShipment', master_shipment: 'masterShipment', service_job: 'serviceJob' };
+  const kindLabel = { house_shipment: 'houseShipment', master_shipment: 'masterShipment', service_job: 'serviceJob', nvocc_job: 'serviceJob' };
 
   const lines = [];
   let skipped = 0;

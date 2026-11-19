@@ -86,6 +86,30 @@ const PARENTS = {
     label: 'Pro forma invoice',
     cargo: () => null,
   },
+  // Liner Agency (NVOCC) job and pre-booking.
+  nvocc_job: {
+    model: () => require('../models').AgencyJob,
+    label: 'Agency job',
+    cargo: (r) => ({
+      transportMode: normaliseMode(r.transportMode),
+      shipmentType: r.cargoType,
+      grossWeight: r.grossWeight,
+      volume: r.volume,
+      containerCount: r.teuTotal,
+      packUnit: r.packUnit,
+    }),
+  },
+  nvocc_pre_booking: {
+    model: () => require('../models').AgencyPreBooking,
+    label: 'Pre booking',
+    cargo: (r) => ({
+      transportMode: normaliseMode(r.transportMode),
+      shipmentType: r.cargoType,
+      grossWeight: r.grossWeight,
+      volume: r.volume,
+      packUnit: r.packUnit,
+    }),
+  },
 };
 
 const normaliseMode = (m) => {

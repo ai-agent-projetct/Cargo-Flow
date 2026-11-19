@@ -29,7 +29,8 @@ const ChargeLine = sequelize.define('ChargeLine', {
 
   // --- what this line hangs off --------------------------------------------
   parentType: {
-    type: DataTypes.ENUM('quote', 'house_shipment', 'master_shipment', 'service_job', 'pro_forma'),
+    // nvocc_* are the Liner Agency job and pre-booking (agency/spec.js).
+    type: DataTypes.ENUM('quote', 'house_shipment', 'master_shipment', 'service_job', 'pro_forma', 'nvocc_job', 'nvocc_pre_booking'),
     allowNull: false,
     comment: 'Which record owns this charge line',
   },

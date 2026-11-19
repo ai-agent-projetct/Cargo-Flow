@@ -715,6 +715,8 @@ REPORTS['general-ledger-report'] = REPORTS['general-ledger'];
 // because they read shipments, quotes and charge lines rather than journal
 // entries, but they share this engine so every one renders in ReportView.
 Object.assign(REPORTS, require('./freightReports').FREIGHT_REPORTS);
+// Liner Agency / NVOCC reports (agency/reports.js).
+Object.assign(REPORTS, require('../agency/reports').AGENCY_REPORTS);
 
 // The ACL model a report reads. Accounting reports read journal entries, so
 // they default to `invoice`; the freight reports declare their own.

@@ -558,3 +558,52 @@ ETL: `etl.model.mapper`, `etl.data.mapping.create`, `etl.data.operation`,
 `etl.field.mapper`, `etl.report.downloader.wizard`,
 `etl.account.downloader.wizard`, `report.download`,
 `charge.wise.cost.report`.
+
+---
+
+## Agency instance (unifeeder-shipping-staging) — Liner Agency / NVOCC
+
+Source: `https://unifeeder-shipping-staging.searates.tech` (SearatesERP - Agency,
+Odoo 15), read 2026-11-19 through `ir.ui.menu`, `fields_get` and
+`fields_view_get`. Built in CargoFlo as the **Liner Agency** module
+(`/admin/agency`), additive: no existing screen, table or flow changed.
+
+Single source of truth: `backend/src/agency/spec.js` (fields, menu),
+`agency/actions.js` (buttons, numbering, side effects), `agency/reports.js`.
+Tables are `ag_*`, created if missing at boot (`agency/seed.js`).
+
+| Upstream model | CargoFlo resource | Notes |
+|---|---|---|
+| nvocc.pre.booking (+ container/cargo/charge lines) | `pre-booking` | PB-SEA-EXP-FCL/YYYY/NNNNN, CRO + gate pass numbers |
+| nvocc.service.job (Sea Export / Sea Import) | `job` | SEA-E/I-FCL-YYYY-NNNNN; charges = `charge_lines` parentType `nvocc_job` |
+| nvocc.shipment.container | `container-line` | number registers the box in the registry |
+| nvocc.master.service.job | `consolidation` | Attach / Detach jobs, Cancel |
+| nvocc.manifest | `manifest` | IMP/EXP-MH-NNNNN/YY; Attach, Update Job Index, Export EDI, WeBOC CSV |
+| container.registry / .activity / .activity.type / .status | `container-registry`, `container-activity`, `container-activity-type`, `container-status` | newest activity drives registry status; 31 activity codes seeded from the instance |
+| charges.tariff (+ lines) | `charges-tariff`, `tariff-line` | Approve / UnApprove; Charge Assignment applies approved buy/sell tariffs to jobs |
+| edi.template / edi.data.map.type / edi.data.mapping, nvocc.import.edi.wizard | `edi-template`, `edi-map-type`, `edi-mapping`, Import EDI page | unmapped values land in EDI Discrepancy Data and resolve on later imports |
+| maintenance.request (+ checklist results), .team, .request.type, .request.checklist, .work.center | `maintenance-request`, ... | Start builds the checklist; damage raises a repair request |
+| maintenance.repair.request (+ .job), .repair.activity | `repair-request`, `repair-job`, `repair-activity` | Done logs RCVR and recharges CONTAINER MAINTAINANCE CHARGES to the job |
+| freight.port.terminal, shipment.job.type, job.stage, shipment.status | `terminal`, `shipment-job-type`, `job-stage`, `shipment-status` | |
+| security.deposit, account.transfer.config, account.cheque.book | `security-deposit`, `transfer-config`, `cheque-book` | |
+| res.partner (Principal) | Principal page | organizations whose party types include Principal |
+
+Workflow buttons (from the form views): Pre Booking — Generate CRO, Send for
+Approval, Approve, Reject, Convert To Export Job, Edit Approved Job, Change
+Status, Revise. Job — Generate BL, Arrival Notice, Generate Invoice, Create
+Vendor Bill, Payment Received, Request D/O, D/O Generate, Charge Assignment,
+Export EDI, Freight Manifest, Change Status. Job invoices and bills go through
+the shared charge-to-invoice bridge, so posting in Accounting updates the
+job's received revenue / paid cost.
+
+Reports (shared ReportView, `/admin/ops-reports/<id>`): CRO operation/customer,
+Freight Manifest/Summary/Recapitulation, Operation (vessel, container, loading
+list, job list, job statistics, D/O status), Principal SOA (summary, export,
+import, detention, pending D/O), Container Maintenance, Principal SOA Summary
+(accounting), Invoices by Vessel/Voyage.
+
+Not built: Stimulsoft MRT / Docx document templates, JSON Spec Importer,
+Allow For Access (menu-level ACL editor), WeBOC submission to Pakistan
+customs (the CSV is generated, not sent).
+
+Check: `node backend/scripts/e2e-agency.js` (52 checks against a running backend).

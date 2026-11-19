@@ -33,6 +33,9 @@ const adminNavigation = [
   { section: 'OPERATIONS' },
   { label: 'Operations', href: '/admin/house-shipments', icon: Ship },
   { label: 'Freight Booking', href: '/admin/freight-bookings', icon: Anchor },
+  // NVOCC / liner agency: pre-booking, sea export/import jobs, manifests,
+  // container tracking, EDI, maintenance & repair.
+  { label: 'Liner Agency', href: '/admin/agency', icon: Ship },
 
   { section: 'TMS' },
   { label: 'TMS Requests', href: '/admin/tms', icon: Truck },

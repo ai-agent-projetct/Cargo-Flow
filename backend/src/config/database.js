@@ -51,6 +51,11 @@ const connectDB = async () => {
     await seedOperationsData();
     const { seedSalesData } = require('./seedSalesData');
     await seedSalesData();
+    // Liner Agency / NVOCC module: create-if-missing tables, then masters and
+    // demo traffic on an empty install.
+    const { ensureAgencyTables, seedAgency } = require('../agency/seed');
+    await ensureAgencyTables(sequelize);
+    await seedAgency();
   } catch (error) {
     console.error('Unable to connect to database:', error.message);
     process.exit(1);

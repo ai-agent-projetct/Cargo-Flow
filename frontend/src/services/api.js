@@ -632,6 +632,22 @@ export const vendorBillsAPI = {
   delete: (id) => api.delete(`/vendorbills/${id}/`),
 };
 
+// ─── Liner Agency / NVOCC ─────────────────────────────────────────────────────
+// One generic API over every resource in backend/src/agency/spec.js.
+export const agencyAPI = {
+  meta: () => api.get('/agency/meta'),
+  lookup: (ref, params) => api.get(`/agency/lookup/${encodeURIComponent(ref)}`, { params }),
+  list: (resource, params) => api.get(`/agency/${resource}`, { params }),
+  get: (resource, id) => api.get(`/agency/${resource}/${id}`),
+  create: (resource, data) => api.post(`/agency/${resource}`, data),
+  update: (resource, id, data) => api.put(`/agency/${resource}/${id}`, data),
+  remove: (resource, id) => api.delete(`/agency/${resource}/${id}`),
+  action: (resource, id, action, data) => api.post(`/agency/${resource}/${id}/actions/${action}`, data || {}),
+  bulk: (resource, action, ids, params) => api.post(`/agency/${resource}/bulk/${action}`, { ids, params }),
+  importEdi: (data) => api.post('/agency/edi/import', data),
+  principals: () => api.get('/agency/principals'),
+};
+
 // ─── Sales & CRM ──────────────────────────────────────────────────────────────
 // Prospect → Lead → Opportunity → Quote → Shipment. `stages` serves both the
 // lead and the opportunity pipelines; pass ?kind=lead|opportunity.

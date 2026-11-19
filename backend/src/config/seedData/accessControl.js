@@ -66,6 +66,16 @@ const MODELS = [
   ['charge.line', 'Charge Line'],
   ['rate.request', 'Rate Request'],
   ['pdc.payment', 'Post Dated Cheque'],
+  // Liner Agency / NVOCC.
+  ['nvocc.pre.booking', 'Pre Booking'],
+  ['nvocc.service.job', 'Agency Job'],
+  ['nvocc.manifest', 'Manifest'],
+  ['nvocc.container', 'Container Registry & Activity'],
+  ['nvocc.config', 'Agency Configuration'],
+  ['charges.tariff', 'Charges Tariff'],
+  ['edi.template', 'EDI Template'],
+  ['maintenance.request', 'Maintenance Request'],
+  ['maintenance.repair.request', 'Repair Request'],
 ];
 
 // perms string is RWCD, e.g. '1110' = read+write+create, no delete.
@@ -279,6 +289,48 @@ const ACL = {
     ['Operations / Administrator', '1000'],
     ['Administration / Settings', '1111'],
   ],
+
+  // --- Liner Agency / NVOCC -------------------------------------------------
+  // Operations runs bookings, jobs, manifests and container moves; billing
+  // reads them to invoice; sales can see bookings for their customers.
+  ...Object.fromEntries([
+    'nvocc.pre.booking', 'nvocc.service.job', 'nvocc.manifest', 'nvocc.container',
+  ].map((m) => [m, [
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1110'],
+    ['Operations / Associate', '1110'],
+    ['Invoicing / Billing Administrator', '1100'],
+    ['Invoicing / Billing', '1000'],
+    ['Sales & CRM / Sales Administrator', m === 'nvocc.pre.booking' ? '1110' : '1000'],
+    ['Sales & CRM / Salesman', m === 'nvocc.pre.booking' ? '1110' : '1000'],
+    ['Service Job / Super Admin', '1111'],
+    ['Administration / Settings', '1111'],
+  ]])),
+  'nvocc.config': [
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1000'],
+    ['Operations / Associate', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'charges.tariff': [
+    ['Pricing / Manage Pricing', '1111'],
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1000'],
+    ['Invoicing / Billing Administrator', '1000'],
+    ['Administration / Settings', '1111'],
+  ],
+  'edi.template': [
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1110'],
+    ['Administration / Settings', '1111'],
+  ],
+  ...Object.fromEntries(['maintenance.request', 'maintenance.repair.request'].map((m) => [m, [
+    ['Operations / Administrator', '1111'],
+    ['Operations / Operation Manager', '1110'],
+    ['Operations / Associate', '1110'],
+    ['Invoicing / Billing Administrator', '1000'],
+    ['Administration / Settings', '1111'],
+  ]])),
 };
 
 module.exports = { GROUPS, MODELS, ACL };
