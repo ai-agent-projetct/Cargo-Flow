@@ -123,5 +123,7 @@ module.exports = {
   callButton, button, BUTTONS, nextNumber,
 };
 
-// Registers the form buttons (needs `button` above, so it loads last).
+// Registers the form buttons and report wizards (need `button` above, so
+// they load last).
 require('./buttons');
+require('./reports');

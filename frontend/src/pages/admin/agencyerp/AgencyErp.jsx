@@ -5,7 +5,9 @@ import {
 import { LayoutGrid, ChevronDown, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
-import { rpc, loadMenus, pyEval, parseArch, children, modifiersOf } from './runtime';
+import {
+  rpc, loadMenus, pyEval, parseArch, children, modifiersOf, saveDownload,
+} from './runtime';
 import { FormView, ListView, ArchBody } from './views';
 
 // SearatesERP "Agency" - the clone of unifeeder-shipping-staging. Menus,
@@ -67,12 +69,7 @@ const WizardDialog = ({ action, onClose, onDone }) => {
       if (action.res_id) await rpc(action.res_model, 'write', [[id], vals]);
       if (b.getAttribute('special') === 'save') { onDone(null); return; }
       const res = await rpc(action.res_model, b.getAttribute('name'), [[id]], { context: ctx });
-      if (res && res.download) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([res.download.content], { type: res.download.mime }));
-        a.download = res.download.filename;
-        a.click();
-      }
+      if (res && res.download) { saveDownload(res.download); onClose(); return; }
       onDone(res && res.type ? res : null);
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };

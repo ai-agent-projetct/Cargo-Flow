@@ -170,6 +170,16 @@ export const pyExpr = (expr, rec) => {
   }));
 };
 
+/** Save a file a button returned: text, or base64 for XLSX/PDF. */
+export const saveDownload = ({ filename, mime, content, encoding }) => {
+  const body = encoding === 'base64' ? Uint8Array.from(atob(content), (c) => c.charCodeAt(0)) : content;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], { type: mime || 'application/octet-stream' }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
 export const parseArch = (arch) => new DOMParser().parseFromString(arch, 'text/xml').documentElement;
 export const children = (node) => [...(node?.childNodes || [])].filter((n) => n.nodeType === 1);
 

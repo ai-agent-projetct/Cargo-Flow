@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
-  rpc, pyEval, parseArch, children, modifiersOf, pyExpr, displayCell, toWriteValue,
+  rpc, pyEval, parseArch, children, modifiersOf, pyExpr, displayCell, toWriteValue, saveDownload,
 } from './runtime';
 import { FieldWidget } from './fields';
 import api from '../../../services/api';
@@ -407,10 +407,7 @@ export const FormView = ({
     if (!res || typeof res !== 'object' || !res.type) { await load(); return; }
     if (res.type === 'cf.input') { setAsk({ ...res, recId, ctx }); return; }
     if (res.type === 'cf.download') {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([res.download.content], { type: res.download.mime }));
-      a.download = res.download.filename;
-      a.click();
+      saveDownload(res.download);
       await load();
       return;
     }
