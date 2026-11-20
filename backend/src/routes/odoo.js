@@ -101,6 +101,30 @@ router.post('/call', async (req, res, next) => {
   }
 });
 
+// Printed documents: the instance's Stimulsoft templates for a model, and one
+// template filled with a record's data.
+router.get('/print/templates', (req, res) => {
+  res.json({ success: true, result: require('../odoo/print').templatesFor(String(req.query.model || '')) });
+});
+router.get('/print/:templateId', async (req, res, next) => {
+  try {
+    const printing = require('../odoo/print');
+    const model = printing.modelOf(req.params.templateId);
+    if (!model) return res.status(404).json({ success: false, message: 'Print template not found' });
+    if (!(await allowed(req, model, 'read'))) return res.status(403).json({ success: false, message: `You are not allowed to read ${model}` });
+    if (req.query.format === 'json') {
+      return res.json({ success: true, result: await printing.render(req.params.templateId, Number(req.query.res_id), ctxOf(req)) });
+    }
+    const out = await printing.renderPdf(req.params.templateId, Number(req.query.res_id), ctxOf(req));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${out.name.replace(/[^\w.-]+/g, '_')}.pdf"`);
+    return res.end(out.pdf);
+  } catch (e) {
+    if (e.statusCode && e.statusCode < 500) return res.status(e.statusCode).json({ success: false, message: e.message });
+    return next(e);
+  }
+});
+
 // A window action by id (smart buttons and type="action" buttons open these).
 router.get('/action/:id', (req, res) => {
   const a = R.U.actions.find((x) => x.id === Number(req.params.id));

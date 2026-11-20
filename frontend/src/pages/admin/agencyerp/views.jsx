@@ -7,6 +7,7 @@ import {
   rpc, pyEval, parseArch, children, modifiersOf, pyExpr, displayCell, toWriteValue,
 } from './runtime';
 import { FieldWidget } from './fields';
+import api from '../../../services/api';
 
 // Form, list and search views of the Agency clone. Each one walks the
 // upstream view XML (fields_view_get) and renders it with Odoo's layout
@@ -471,6 +472,7 @@ export const FormView = ({
         {mode === 'readonly' && id && (
           <button type="button" className="px-3 py-1 rounded border border-slate-300 text-[13px]" onClick={() => onCreated(null)}>Create</button>
         )}
+        {mode === 'readonly' && id && <PrintMenu model={model} id={id} />}
         {mode === 'readonly' && id && (
           <button type="button" className="ml-auto px-2 py-1 rounded text-[13px] text-slate-500 hover:text-red-600 inline-flex items-center gap-1"
             onClick={async () => { if (!window.confirm('Are you sure you want to delete this record?')) return; try { await rpc(model, 'unlink', [[Number(id)]]); onBack(); } catch (e) { toast.error(errMsg(e)); } }}>
@@ -529,6 +531,42 @@ export const FormView = ({
       </div>
       {lineDlg && <LineDialog model={lineDlg.model} values={lineDlg.values} readonly={mode !== 'edit'} onClose={() => setLineDlg(null)} onSave={saveRow} />}
       {ask && <AskDialog ask={ask} onCancel={() => setAsk(null)} onOk={answer} />}
+    </div>
+  );
+};
+
+/** Print: the instance's Stimulsoft documents for this model, as PDF. */
+const PrintMenu = ({ model, id }) => {
+  const [list, setList] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(null);
+  useEffect(() => {
+    api.get('/odoo/print/templates', { params: { model } }).then((r) => setList(r.data.result || [])).catch(() => setList([]));
+  }, [model]);
+  if (!list || !list.length) return null;
+  const run = async (t) => {
+    setBusy(t.id);
+    try {
+      const res = await api.get(`/odoo/print/${t.id}`, { params: { res_id: id }, responseType: 'blob' });
+      window.open(URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' })), '_blank');
+    } catch (e) {
+      toast.error('Could not print this document');
+    } finally { setBusy(null); setOpen(false); }
+  };
+  return (
+    <div className="relative">
+      <button type="button" className="px-3 py-1 rounded border border-slate-300 text-[13px] inline-flex items-center gap-1" onClick={() => setOpen(!open)}>
+        Print <ChevronDown size={12} />
+      </button>
+      {open && (
+        <div className="absolute z-40 mt-1 bg-white border shadow-lg rounded py-1 min-w-[220px]">
+          {list.map((t) => (
+            <button key={t.id} type="button" disabled={!!busy} onClick={() => run(t)} className="block w-full text-left px-3 py-1.5 text-[13px] hover:bg-[#e9ecef] disabled:opacity-50">
+              {busy === t.id ? 'Preparing…' : t.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
